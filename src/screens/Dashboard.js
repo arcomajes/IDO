@@ -1,11 +1,51 @@
-import React from "react";
 import { Card, CardContent } from "src/components/cards";
-import { MapPin, Camera, Heart, Calendar } from "lucide-react";
+import { MapPin, Heart, Calendar } from "lucide-react";
 import { Button } from "src/components/button";
-import 'src/styles.css'; // Import the CSS file for animations and styling
+import 'src/styles.css';
+import React, { useState } from "react";
+import axios from "axios";
 
 export default function Dashboard() {
+  const [name, setName] = useState("");
+  const [images, setImages] = useState([]);
+  const [message, setMessage] = useState("");
   
+  const handleImageUpload = (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length + images.length > 10) {
+      alert("You can only upload up to 10 images.");
+      return;
+    }
+    setImages([...images, ...files]);
+  };
+  
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+  
+    if (images.length === 0) {
+      alert("Please upload at least one image.");
+      return;
+    }
+  
+    const formData = new FormData();
+    formData.append("name", name || "Anonymous"); // Allow anonymous upload
+    images.forEach((image) => formData.append("images", image));
+    formData.append("message", message || ""); // Allow empty messages
+  
+    try {
+      await axios.post("http://localhost:5001/upload", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      alert("Memory uploaded successfully!");
+      setName("");
+      setImages([]);
+      setMessage("");
+    } catch (err) {
+      alert("Upload failed. Please try again.");
+    }
+  };
+  
+
   const weddingDetails = {
     couple: {
       name1: "Kevin",
@@ -147,15 +187,56 @@ export default function Dashboard() {
                 <div className="text-center mb-8">
                   <span className="text-2xl font-semibold text-red-900">#KevinAndEstrelWedding</span>
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {[1, 2, 3, 4, 5, 6].map((item) => (
-                    <div key={item} className="aspect-square bg-gray-200 rounded-lg flex items-center justify-center">
-                      <Camera className="h-8 w-8 text-gray-400" />
+                <div className="max-w-lg mx-auto bg-white p-6 rounded-lg shadow-md">
+                  <h2 className="text-2xl font-semibold text-center mb-4">Upload Memories</h2>
+                  <form onSubmit={handleSubmit}>
+                    <div className="mb-4">
+                      <label className="block font-medium mb-1">Your Name:</label>
+                      <input
+                        type="text"
+                        className="w-full p-2 border border-gray-300 rounded"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        required
+                      />
                     </div>
-                  ))}
-                </div>
-                <div className="mt-6 text-center">
-                  <Button className="bg-red-900 hover:bg-red-800">Upload Photos</Button>
+
+                    <div className="mb-4">
+                      <label className="block font-medium mb-1">Upload Images (Max 10):</label>
+                      <input type="file" accept="image/*" multiple onChange={handleImageUpload} />
+                      <CardContent className="p-0">
+                        <div className="flex flex-wrap gap-2 mt-2">
+                        {images.map((img, index) => (
+                          <img
+                            key={index}
+                            src={URL.createObjectURL(img)}
+                            alt="preview"
+                            className="h-16 w-16 object-cover rounded"
+                          />
+                        ))}
+                      </div>
+                      </CardContent>
+                      
+                    </div>
+
+                    <div className="mb-4">
+                      <label className="block font-medium mb-1">Your Message/Wishes:</label>
+                      <textarea
+                        className="w-full p-2 border border-gray-300 rounded"
+                        rows="3"
+                        value={message}
+                        onChange={(e) => setMessage(e.target.value)}
+                        required
+                      ></textarea>
+                    </div>
+
+                    <button
+                      type="submit"
+                      className="w-full bg-red-700 text-white py-2 rounded hover:bg-red-800"
+                    >
+                      Upload Memory
+                    </button>
+                  </form>
                 </div>
               </CardContent>
             </Card>
