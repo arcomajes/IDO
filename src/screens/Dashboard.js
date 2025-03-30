@@ -61,7 +61,7 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-red-800 text-whit">
+    <div className="min-h-screen bg-red-800 text-white">
       {/* Top Navigation */}
       <nav className="sticky-nav"> {/* Apply your CSS here */}
         <div className="nav-container">
@@ -94,8 +94,8 @@ export default function Dashboard() {
         <h1>Join Our Greatest Adventure</h1>
         <p>We invite you to celebrate our wedding day</p>
         <div className="hero-buttons">
-          <button className="btn btn-primary">RSVP</button>
-          <button className="btn btn-outline">View Details</button>
+          <Button className="btn btn-primary">RSVP</Button>
+          <Button className="btn btn-outline">View Details</Button>
         </div>
       </div>
     </div>
@@ -103,24 +103,24 @@ export default function Dashboard() {
 
   <div className="grid-container">
     {/* Wedding Date Card */}
-    <div id="schedule" className="card">
-      <div className="card-content">
+    <Card id="schedule" className="card">
+      <CardContent className="card-content">
         <Calendar className="card-icon" />
         <h3>Wedding Date</h3>
         <p>{weddingDetails.date}</p>
         <p>{weddingDetails.day}</p>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
 
     {/* Locations Card */}
-    <div className="card">
-      <div className="card-content">
+    <Card className="card">
+      <CardContent className="card-content">
         <MapPin className="card-icon" />
         <h3>Locations</h3>
         <p>Ceremony & Reception</p>
         <p className="text-sm">See details below</p>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   </div>
 </section>
 
@@ -128,8 +128,8 @@ export default function Dashboard() {
 <section id="locations" className="mb-16">
   <div className="location-grid">
     {/* Ceremony Card */}
-    <div className="location-card">
-      <div className="card-content">
+    <Card className="location-card">
+      <CardContent className="card-content">
         <div className="location-card-header">
           <div className="location-icon">
             <Heart className="location-icon-svg" />
@@ -144,9 +144,9 @@ export default function Dashboard() {
           <MapPin />
           <span>Map placeholder</span>
         </div>
-        <button className="btn btn-location">Get Directions</button>
-      </div>
-    </div>
+        <Button className="btn btn-location">Get Directions</Button>
+      </CardContent>
+    </Card>
   </div>
 </section>
 
@@ -167,25 +167,45 @@ export default function Dashboard() {
       <form onSubmit={handleSubmit}>
         <div className="form-group">
           <label>Your Name:</label>
-          <input type="text" className="form-control" />
+          <input 
+            type="text" 
+            className="form-control" 
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
         </div>
         <div className="form-group">
           <label>Upload Images (Max 10):</label>
           <div className="file-input-container">
             <label className="file-input-label">
               Click to select photos
-              <input type="file" className="file-input" multiple />
+              <input 
+                type="file" 
+                className="file-input" 
+                multiple 
+                onChange={handleImageUpload}
+              />
             </label>
           </div>
           <div className="image-preview-grid">
             {images.map((img, index) => (
-              <img key={index} src={URL.createObjectURL(img)} className="image-preview" />
+              <img 
+                key={index} 
+                src={URL.createObjectURL(img)} 
+                className="image-preview" 
+                alt={`Preview ${index + 1}`}
+              />
             ))}
           </div>
         </div>
         <div className="form-group">
           <label>Your Message/Wishes:</label>
-          <textarea className="form-control" rows="3"></textarea>
+          <textarea 
+            className="form-control" 
+            rows="3"
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+          ></textarea>
         </div>
         <button type="submit" className="submit-btn">Upload Memory</button>
       </form>
@@ -209,7 +229,6 @@ export default function Dashboard() {
   </div>
 </section>
 
-          {/* Footer */}
           {/* Footer */}
           <footer className="footer">
             <div className="footer-hearts"></div>
