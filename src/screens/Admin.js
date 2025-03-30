@@ -10,6 +10,7 @@ export default function Admin() {
   const [loading, setLoading] = useState(true)
   const [selectedImage, setSelectedImage] = useState(null) // For image modal
   const navigate = useNavigate()
+  const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5001";
 
   useEffect(() => {
     const token = localStorage.getItem("token")
@@ -17,7 +18,7 @@ export default function Admin() {
 
     const fetchMemories = async () => {
       try {
-        const res = await axios.get("http://localhost:5001/api/memories", {
+        const res = await axios.get(`${API_URL}/api/memories`, {
           headers: { Authorization: `Bearer ${token}` },
         })
         setMemories(res.data)
@@ -28,7 +29,7 @@ export default function Admin() {
       }
     }
     fetchMemories()
-  }, [navigate])
+  }, [navigate, API_URL])
 
   const handleLogout = () => {
     localStorage.removeItem("token")
@@ -37,7 +38,7 @@ export default function Admin() {
 
   const handleDownload = async (imagePath) => {
     try {
-      const response = await fetch(`http://localhost:5001/${imagePath}`)
+      const response = await fetch(`${API_URL}/${imagePath}`)
       const blob = await response.blob()
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement("a")
@@ -74,8 +75,8 @@ export default function Admin() {
         {memories.map((memory) =>
           memory.images.map((image, index) => (
             <div key={`${memory._id}-${index}`} className={`memory-card color-${index % 3}`}>
-              <div className="image-container" onClick={() => handleImageClick(`http://localhost:5001/${image}`)}>
-                <img src={`http://localhost:5001/${image}`} alt={`Memory ${index + 1}`} className="memory-image" />
+              <div className="image-container" onClick={() => handleImageClick(`${API_URL}/${image}`)}>
+                <img src={`${API_URL}/${image}`} alt={`Memory ${index + 1}`} className="memory-image" />
               </div>
               <div className="card-content">
                 <h2 className="memory-title">Memory {index + 1}</h2>

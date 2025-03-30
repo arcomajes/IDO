@@ -4,19 +4,49 @@ const multer = require("multer");
 const cors = require("cors");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const path = require("path");
 require("dotenv").config();
 
 const app = express();
+const allowedOrigins = [
+  'http://localhost:3000',
+  'https://ido-9cvq.vercel.app', 
+  'https://yesido.onrender.com'
+];
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/');
+  },
+  filename: (req, file, cb) => {
+    cb(null, `${Date.now()}-${file.originalname}`);
+  }
+});
 
+const upload = multer({ 
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
+});
 // Middleware
 app.use(express.json());
 app.use(cors({
-  origin: ["http://localhost:3000", "https://yesido.onrender.com"],
+  origin: allowedOrigins,
   credentials: true
 }));
-app.use("/uploads", express.static("uploads"));
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
+
+// Serve static files
+app.use('/uploads', express.static('uploads'));
+
+// Serve frontend build
 if (process.env.NODE_ENV === 'production') {
-  app.use(express.static('client/build'));
+  app.use(express.static(path.join(__dirname, 'client/build')));
+  
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'client/build', 'index.html'));
+  });
 }
 
 
@@ -106,7 +136,6 @@ app.get("/api/memories", authMiddleware, async (req, res) => {
 });
 
 // Public Upload Route
-const upload = multer({ dest: "uploads/" });
 app.post("/upload", upload.array("images", 10), async (req, res) => {
   try {
     const images = req.files.map(file => file.path);
