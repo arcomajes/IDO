@@ -8,6 +8,7 @@ const path = require("path");
 require("dotenv").config();
 
 const app = express();
+
 const allowedOrigins = [
   'http://localhost:3000',
   'https://ido-9cvq.vercel.app', 
@@ -22,23 +23,32 @@ const storage = multer.diskStorage({
   }
 });
 
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE'], // Add allowed methods
+  allowedHeaders: ['Content-Type', 'Authorization'] // Add necessary headers
+}));
+
+// Middleware
+app.use(express.json());
+
 const upload = multer({ 
   storage,
   limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
 });
-// Middleware
-app.use(express.json());
-app.use(cors({
-  origin: allowedOrigins,
-  credentials: true
-}));
+
+app.use((req, res, next) => {
+  if (process.env.NODE_ENV === 'production' && !req.secure) {
+    return res.redirect('https://' + req.headers.host + req.url);
+  }
+  next();
+});
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok' });
 });
 
-// Serve static files
-app.use('/uploads', express.static('uploads'));
 
 // Serve frontend build
 if (process.env.NODE_ENV === 'production') {
@@ -150,6 +160,16 @@ app.post("/upload", upload.array("images", 10), async (req, res) => {
     res.status(500).json({ message: "Upload failed" });
   }
 });
+
+// 5. Static Files and Frontend Serving (should come after API routes)
+app.use('/uploads', express.static('uploads'));
+
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.join(__dirname, 'client/build')));
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'client/build', 'index.html'));
+  });
+}
 
 const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
