@@ -11,10 +11,14 @@ const app = express();
 // Middleware
 app.use(express.json());
 app.use(cors({
-  origin: "http://localhost:3000",
+  origin: ["http://localhost:3000", "YOUR_FRONTEND_URL"],
   credentials: true
 }));
 app.use("/uploads", express.static("uploads"));
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static('client/build'));
+}
+
 
 // Database Connection
 mongoose.connect(process.env.MONGODB_URI, { 
