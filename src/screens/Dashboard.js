@@ -29,20 +29,32 @@ export default function Dashboard() {
     }
   
     const formData = new FormData();
-    formData.append("name", name || "Anonymous"); // Allow anonymous upload
-    images.forEach((image) => formData.append("images", image));
-    formData.append("message", message || ""); // Allow empty messages
+    formData.append("name", name || "Anonymous");
+    // Correct way to append multiple files
+    images.forEach((image) => {
+      formData.append("images", image); // Field name must match server's upload.array('images')
+    });
+    formData.append("message", message || "");
   
     try {
-      await axios.post(`${API_URL}/upload`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+      const response = await axios.post(`${API_URL}/upload`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
       });
-      alert("Memory uploaded successfully!");
+  
+      if (response.data.images) {
+        alert(`Uploaded ${response.data.images.length} images successfully!`);
+      } else {
+        alert("Memory uploaded successfully!");
+      }
+      
       setName("");
       setImages([]);
       setMessage("");
     } catch (err) {
-      alert("Upload failed. Please try again.");
+      console.error('Upload error:', err);
+      alert(`Upload failed: ${err.response?.data?.message || err.message}`);
     }
   };
   
@@ -165,7 +177,7 @@ export default function Dashboard() {
     <div className="hashtag-display">#KevinAndEstrelWedding</div>
     <div className="upload-form">
       <h2>Upload Memories</h2>
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} encType="multipart/form-data"> 
         <div className="form-group">
           <label>Your Name:</label>
           <input 
@@ -185,6 +197,7 @@ export default function Dashboard() {
                 className="file-input" 
                 multiple 
                 onChange={handleImageUpload}
+                capture="environment" 
               />
             </label>
           </div>

@@ -27,9 +27,11 @@ app.use(cors({
   origin: allowedOrigins,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE'], // Add allowed methods
-  allowedHeaders: ['Content-Type', 'Authorization'] // Add necessary headers
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', // Add mobile headers
+    'Accept',
+    'Origin'] // Add necessary headers
 }));
-
+app.options('*', cors());
 // Middleware
 app.use(express.json());
 
@@ -49,7 +51,12 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok' });
 });
 
-
+// Serve uploaded files with proper cache headers
+app.use('/uploads', express.static('uploads', {
+  setHeaders: (res, path) => {
+    res.set('Cache-Control', 'public, max-age=31557600'); // 1 year cache
+  }
+}));
 // Serve frontend build
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, 'client/build')));
@@ -58,6 +65,17 @@ if (process.env.NODE_ENV === 'production') {
     res.sendFile(path.join(__dirname, 'client/build', 'index.html'));
   });
 }
+// Add after CORS middleware
+app.use(express.urlencoded({ extended: true })); // For mobile form data
+
+// Add mobile-specific body parser
+app.use((req, res, next) => {
+  if(req.headers['content-type']?.startsWith('multipart/form-data')) {
+    express.json()(req, res, next);
+  } else {
+    next();
+  }
+});
 
 
 // Database Connection
@@ -146,23 +164,36 @@ app.get("/api/memories", authMiddleware, async (req, res) => {
 });
 
 // Public Upload Route
+// Modify your upload route
 app.post("/upload", upload.array("images", 10), async (req, res) => {
   try {
-    const images = req.files.map(file => file.path);
+    // Mobile-friendly response
+    const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+    const images = req.files.map(file => 
+      `${protocol}://${req.get('host')}/${file.path.replace(/\\/g, '/')}`
+    );
+
     const newMemory = new Memory({
       name: req.body.name || "Anonymous",
       images,
       message: req.body.message || ""
     });
+
     await newMemory.save();
-    res.status(201).json({ message: "Memory saved!" });
+    
+    res.status(201).json({ 
+      message: "Memory saved!",
+      images // Return full URLs for mobile
+    });
   } catch (error) {
-    res.status(500).json({ message: "Upload failed" });
+    console.error('Upload error:', error);
+    res.status(500).json({ 
+      message: "Upload failed",
+      error: process.env.NODE_ENV === 'development' ? error.message : null
+    });
   }
 });
 
-// 5. Static Files and Frontend Serving (should come after API routes)
-app.use('/uploads', express.static('uploads'));
 
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, 'client/build')));
