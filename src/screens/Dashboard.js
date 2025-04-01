@@ -38,6 +38,7 @@ export default function Dashboard() {
         headers: { 
           "Content-Type": "multipart/form-data",
         },
+        withCredentials: true // Uncomment if using credentials
       });
       alert("Memory uploaded successfully!");
       setName("");

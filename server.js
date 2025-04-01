@@ -31,6 +31,7 @@ const upload = multer({
 });
 // Middleware
 app.use(express.json());
+app.set('trust proxy', 1);
 const allowedOrigins = [
   'https://wedding-plan-beta.vercel.app', // Add this
   'https://ido-cvwh.onrender.com',
@@ -38,9 +39,16 @@ const allowedOrigins = [
 ];
 
 app.use(cors({
-  origin: allowedOrigins,
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE']
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 
