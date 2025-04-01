@@ -4,26 +4,95 @@ const multer = require("multer");
 const cors = require("cors");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const path = require("path");
+const fs = require('fs');
+require('v8').setFlagsFromString('--max-old-space-size=4096');
 require("dotenv").config();
 
-const app = express();
+if (!fs.existsSync('uploads')) {
+  fs.mkdirSync('uploads');
+  console.log('Created uploads directory');
+}
 
-// Middleware
-app.use(express.json());
+const app = express();
+// Allow CORS for frontend domain
 app.use(cors({
-  origin: "http://localhost:3000",
+  origin: ["https://wedding-plan-beta.vercel.app", "http://localhost:3000"], // Your frontend domain
+  //origin: "*",
+  methods: "GET,POST,PUT,DELETE",
+  allowedHeaders: "Content-Type,Authorization",
   credentials: true
 }));
-app.use("/uploads", express.static("uploads"));
+
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/');
+  },
+  filename: (req, file, cb) => {
+    cb(null, `${Date.now()}-${file.originalname}`);
+  }
+});
+
+const upload = multer({ 
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
+});
+// Middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.set('trust proxy', 1);
+
+
+
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
+
+// Serve static files from the 'public' directory (images, favicon, etc.)
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Serve frontend build only in production
+if (process.env.NODE_ENV === 'production') {
+  // Serve the static assets (e.g., JS, CSS files) from the React app build folder
+  app.use(express.static(path.join(__dirname, 'build')));
+
+  // Handle all other routes and send the React 'index.html' for client-side routing
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'build', 'index.html'));
+  });
+} else {
+  // For non-production (development), React app will be served by its own server (e.g., webpack dev server)
+  // Just serve static files from 'public'
+  app.use(express.static(path.join(__dirname, 'public')));
+}
+
+// Upload route
+app.post("/upload", upload.array("images", 10), async (req, res) => {
+  try {
+    const images = req.files.map(file => `/uploads/${file.filename}`);
+    const newStory = new Story({
+      name: req.body.name || "Anonymous",
+      images,
+      message: req.body.message || ""
+    });
+    await newStory.save();
+    res.status(201).json({ message: "Story saved!" });
+    console.log("Upload route hit!");
+  } catch (error) {
+    res.status(500).json({ message: "Upload failed" });
+  }
+});
 
 // Database Connection
 mongoose.connect(process.env.MONGODB_URI, { 
   dbName: "weddingplan",
-  useNewUrlParser: true, 
-  useUnifiedTopology: true 
 })
 .then(() => console.log("✅ MongoDB Connected"))
 .catch(err => console.error("❌ MongoDB Connection Error:", err));
+
 
 // Models
 const MemorySchema = new mongoose.Schema({
@@ -33,6 +102,14 @@ const MemorySchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 const Memory = mongoose.model("Memory", MemorySchema);
+
+const StorySchema = new mongoose.Schema({
+  name: String,
+  images: [String],
+  message: String,
+  createdAt: { type: Date, default: Date.now }
+});
+const Story = mongoose.model("Story", StorySchema);
 
 const UserSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
@@ -72,6 +149,8 @@ const authMiddleware = (req, res, next) => {
   }
 };
 
+
+
 // Routes
 app.post("/api/login", async (req, res) => {
   try {
@@ -100,23 +179,22 @@ app.get("/api/memories", authMiddleware, async (req, res) => {
     res.status(500).json({ message: "Error fetching memories" });
   }
 });
-
-// Public Upload Route
-const upload = multer({ dest: "uploads/" });
-app.post("/upload", upload.array("images", 10), async (req, res) => {
+// Protected Routes
+app.get("/api/stories", authMiddleware, async (req, res) => {
   try {
-    const images = req.files.map(file => file.path);
-    const newMemory = new Memory({
-      name: req.body.name || "Anonymous",
-      images,
-      message: req.body.message || ""
-    });
-    await newMemory.save();
-    res.status(201).json({ message: "Memory saved!" });
+    const stories = await Story.find();
+    res.json(stories);
   } catch (error) {
-    res.status(500).json({ message: "Upload failed" });
+    res.status(500).json({ message: "Error fetching stories" });
   }
 });
 
+// Add error handling middleware
+app.use((err, req, res, next) => {
+  console.error("💥 Server Error:", err);
+  res.status(500).json({ error: "Internal server error" });
+});
+
 const PORT = process.env.PORT || 5001;
+console.log(`Configured port: ${PORT}`);
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

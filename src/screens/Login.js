@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
@@ -7,11 +7,33 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const API_BASE_URL = "https://ido-cvwh.onrender.com";
+
+  useEffect(() => {
+    // Create a reference to the handler function
+    const handleFocus = () => {
+      window.scrollTo(0, document.body.scrollHeight);
+    };
+
+    const inputs = document.querySelectorAll('input');
+    
+    // Add event listeners with the named function
+    inputs.forEach(input => {
+      input.addEventListener('focus', handleFocus);
+    });
+
+    // Cleanup function with proper removeEventListener call
+    return () => {
+      inputs.forEach(input => {
+        input.removeEventListener('focus', handleFocus);
+      });
+    };
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post('http://localhost:5001/api/login', {
+      const res = await axios.post(`${API_BASE_URL}/api/login`, {
         username,
         password
       });

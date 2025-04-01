@@ -6,29 +6,33 @@ import { useNavigate } from "react-router-dom"
 import "./Admin.css"
 
 export default function Admin() {
-  const [memories, setMemories] = useState([])
+  const [stories, setStories] = useState([])
   const [loading, setLoading] = useState(true)
   const [selectedImage, setSelectedImage] = useState(null) // For image modal
   const navigate = useNavigate()
+  const API_BASE_URL = "https://ido-cvwh.onrender.com";
 
   useEffect(() => {
     const token = localStorage.getItem("token")
     if (!token) navigate("/login")
 
-    const fetchMemories = async () => {
-      try {
-        const res = await axios.get("http://localhost:5001/api/memories", {
-          headers: { Authorization: `Bearer ${token}` },
-        })
-        setMemories(res.data)
-        setLoading(false)
-      } catch (error) {
-        console.error("Error fetching memories:", error)
-        navigate("/login")
-      }
-    }
-    fetchMemories()
-  }, [navigate])
+      const fetchStories = async () => {
+        try {
+          const res = await axios.get(`${API_BASE_URL}/api/stories`, {
+            headers: { 
+              Authorization: `Bearer ${localStorage.getItem('token')}`
+            },
+            withCredentials: true
+          });
+          setStories(res.data);
+          setLoading(false);
+        } catch (error) {
+          console.error("Error fetching stories:", error);
+          navigate("/login");
+        }
+      };
+    fetchStories()
+  }, [navigate, API_BASE_URL])
 
   const handleLogout = () => {
     localStorage.removeItem("token")
@@ -37,7 +41,7 @@ export default function Admin() {
 
   const handleDownload = async (imagePath) => {
     try {
-      const response = await fetch(`http://localhost:5001/${imagePath}`)
+      const response = await fetch(`${API_BASE_URL}/${imagePath}`)
       const blob = await response.blob()
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement("a")
@@ -70,20 +74,25 @@ export default function Admin() {
           Log Out
         </button>
       </div>
-      <div className="memory-grid">
-        {memories.map((memory) =>
-          memory.images.map((image, index) => (
-            <div key={`${memory._id}-${index}`} className={`memory-card color-${index % 3}`}>
-              <div className="image-container" onClick={() => handleImageClick(`http://localhost:5001/${image}`)}>
-                <img src={`http://localhost:5001/${image}`} alt={`Memory ${index + 1}`} className="memory-image" />
+      <div className="story-grid">
+        {stories.map((story) =>
+          story.images.map((image, index) => (
+            <div key={`${story._id}-${index}`} className={`story-card color-${index % 3}`}>
+              <div className="image-container" onClick={() => handleImageClick(`${API_BASE_URL}/${image}`)}>
+              <img 
+                src={image} 
+                alt={`Story ${index + 1}`} 
+                className="story-image" 
+                onClick={() => handleImageClick(`${API_BASE_URL}/${image}`)}
+              />
               </div>
               <div className="card-content">
-                <h2 className="memory-title">Memory {index + 1}</h2>
-                <p className="memory-info">
-                  <span className="info-icon">👤</span> Name: {memory.name || "Anonymous"}
+                <h2 className="story-title">Story {index + 1}</h2>
+                <p className="story-info">
+                  <span className="info-icon">👤</span> Name: {story.name || "Anonymous"}
                 </p>
-                <p className="memory-info">
-                  <span className="info-icon">💬</span> Message: {memory.message || "No message provided"}
+                <p className="story-info">
+                  <span className="info-icon">💬</span> Message: {story.message || "No message provided"}
                 </p>
                 <div className="card-footer">
                   <div className="indicator-dots">
@@ -106,7 +115,7 @@ export default function Admin() {
         <div className="modal-overlay" onClick={closeModal}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <button className="close-button" onClick={closeModal}>✖</button>
-            <img src={selectedImage} alt="Selected Memory" className="modal-image" />
+            <img src={selectedImage} alt="Selected Story" className="modal-image" />
           </div>
         </div>
       )}

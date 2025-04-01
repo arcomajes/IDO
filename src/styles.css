@@ -974,3 +974,54 @@ footer p:last-child {
   100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
 }
 
+input, select, textarea {
+  font-size: 16px !important; /* Prevent mobile zoom */
+}
+
+@media screen and (max-width: 767px) {
+  /* Mobile-specific styles */
+  .login-form {
+    padding: 15px;
+    min-width: auto;
+  }
+}
+
+.file-input-label {
+  display: block;
+  padding: 1rem;
+  background: #f0f0f0;
+  border-radius: 0.5rem;
+  text-align: center;
+  cursor: pointer;
+}
+
+.file-input {
+  opacity: 0;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+}
+
+.image-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.image-preview {
+  width: 100%;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 0.5rem;
+}
+
+@media (max-width: 768px) {
+  .upload-form {
+    padding: 1rem;
+  }
+  
+  .form-control {
+    font-size: 16px; /* Prevent mobile zoom */
+  }
+}

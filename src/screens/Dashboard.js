@@ -9,6 +9,8 @@ export default function Dashboard() {
   const [name, setName] = useState("");
   const [images, setImages] = useState([]);
   const [message, setMessage] = useState("");
+  const API_BASE_URL = "https://ido-cvwh.onrender.com"; // Ensure this is correct
+
   
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
@@ -28,23 +30,27 @@ export default function Dashboard() {
     }
   
     const formData = new FormData();
-    formData.append("name", name || "Anonymous"); // Allow anonymous upload
+    formData.append("name", name || "Anonymous");
     images.forEach((image) => formData.append("images", image));
-    formData.append("message", message || ""); // Allow empty messages
+    formData.append("message", message || "");
   
     try {
-      await axios.post("http://localhost:5001/upload", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+      await axios.post(`${API_BASE_URL}/upload`, formData, {
+        headers: { 
+          "Content-Type": "multipart/form-data",
+          //"Access-Control-Allow-Origin": "https://wedding-plan-beta.vercel.app",
+        },
+        withCredentials: true // Uncomment if using credentials
       });
       alert("Memory uploaded successfully!");
       setName("");
       setImages([]);
       setMessage("");
     } catch (err) {
+      console.error("Upload error:", err);
       alert("Upload failed. Please try again.");
     }
   };
-  
 
   const weddingDetails = {
     couple: {
@@ -212,23 +218,6 @@ export default function Dashboard() {
     </div>
   </div>
 </section>
-
-{/* RSVP Section */}
-<section id="rsvp" className="mb-16">
-  <div className="section-header">
-  <div className="divider"></div>
-    <h2>RSVP</h2>
-    <div className="divider"></div>
-  </div>
-  <div className="rsvp-card">
-    <div className="rsvp-header">
-      <h3>We hope you can join us!</h3>
-      <p>Please RSVP by March 6, 2025</p>
-    </div>
-    {/* RSVP form would go here */}
-  </div>
-</section>
-
           {/* Footer */}
           <footer className="footer">
             <div className="footer-hearts"></div>
