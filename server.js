@@ -73,13 +73,13 @@ if (process.env.NODE_ENV === 'production') {
 app.post("/upload", upload.array("images", 10), async (req, res) => {
   try {
     const images = req.files.map(file => `/uploads/${file.filename}`);
-    const newMemory = new Memory({
+    const newStory = new Story({
       name: req.body.name || "Anonymous",
       images,
       message: req.body.message || ""
     });
-    await newMemory.save();
-    res.status(201).json({ message: "Memory saved!" });
+    await newStory.save();
+    res.status(201).json({ message: "Story saved!" });
     console.log("Upload route hit!");
   } catch (error) {
     res.status(500).json({ message: "Upload failed" });
@@ -102,6 +102,14 @@ const MemorySchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 const Memory = mongoose.model("Memory", MemorySchema);
+
+const StorySchema = new mongoose.Schema({
+  name: String,
+  images: [String],
+  message: String,
+  createdAt: { type: Date, default: Date.now }
+});
+const Story = mongoose.model("Story", StorySchema);
 
 const UserSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
@@ -169,6 +177,15 @@ app.get("/api/memories", authMiddleware, async (req, res) => {
     res.json(memories);
   } catch (error) {
     res.status(500).json({ message: "Error fetching memories" });
+  }
+});
+// Protected Routes
+app.get("/api/stories", authMiddleware, async (req, res) => {
+  try {
+    const stories = await Story.find();
+    res.json(stories);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching stories" });
   }
 });
 
