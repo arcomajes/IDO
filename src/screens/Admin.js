@@ -80,7 +80,7 @@ export default function Admin() {
             <div key={`${memory._id}-${index}`} className={`memory-card color-${index % 3}`}>
               <div className="image-container" onClick={() => handleImageClick(`${API_URL}/${image}`)}>
               <img 
-                src={`${API_URL}/${image}`} 
+                src={image} 
                 alt={`Memory ${index + 1}`} 
                 className="memory-image" 
                 onClick={() => handleImageClick(`${API_URL}/${image}`)}

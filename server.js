@@ -6,8 +6,8 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const path = require("path");
 const fs = require('fs');
-require("dotenv").config();
 require('v8').setFlagsFromString('--max-old-space-size=4096');
+require("dotenv").config();
 
 if (!fs.existsSync('uploads')) {
   fs.mkdirSync('uploads');
@@ -31,14 +31,16 @@ const upload = multer({
 });
 // Middleware
 app.use(express.json());
+const allowedOrigins = [
+  'https://ido-9cvq.vercel.app', // Add this
+  'https://yesido.onrender.com',
+  'http://localhost:3000'
+];
+
 app.use(cors({
-  origin: [
-    'http://localhost:3000',
-    'https://ido-9cvq.vercel.app',
-    'https://yesido.onrender.com'
-  ],
+  origin: allowedOrigins,
   credentials: true,
-  allowedHeaders: ['Content-Type', 'Authorization']
+  methods: ['GET', 'POST', 'PUT', 'DELETE']
 }));
 
 
@@ -58,7 +60,10 @@ if (process.env.NODE_ENV === 'production') {
     res.sendFile(path.join(__dirname, 'client/build', 'index.html'));
   });
 }
-
+app.use((err, req, res, next) => {
+  console.error('Server Error:', err.stack);
+  res.status(500).send('Internal Server Error');
+});
 console.log("Server starting...");
 
 // Database Connection
