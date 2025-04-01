@@ -32,8 +32,8 @@ const upload = multer({
 // Middleware
 app.use(express.json());
 const allowedOrigins = [
-  'https://ido-9cvq.vercel.app', // Add this
-  'https://yesido.onrender.com',
+  'https://wedding-plan-beta.vercel.app/', // Add this
+  'https://ido-cvwh.onrender.com/',
   'http://localhost:3000'
 ];
 
@@ -87,8 +87,6 @@ app.post("/upload", upload.array("images", 10), async (req, res) => {
 // Database Connection
 mongoose.connect(process.env.MONGODB_URI, { 
   dbName: "weddingplan",
-  useNewUrlParser: true, 
-  useUnifiedTopology: true 
 })
 .then(() => console.log("✅ MongoDB Connected"))
 .catch(err => console.error("❌ MongoDB Connection Error:", err));
@@ -141,23 +139,6 @@ const authMiddleware = (req, res, next) => {
   }
 };
 
-
-// Public Upload Route
-app.post("/upload", upload.array("images", 10), async (req, res) => {
-  try {
-    const images = req.files.map(file => `/uploads/${file.filename}`);
-    const newMemory = new Memory({
-      name: req.body.name || "Anonymous",
-      images,
-      message: req.body.message || ""
-    });
-    await newMemory.save();
-    res.status(201).json({ message: "Memory saved!" });
-    console.log("Upload route hit!");
-  } catch (error) {
-    res.status(500).json({ message: "Upload failed" });
-  }
-});
 
 
 // Routes
