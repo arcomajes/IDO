@@ -49,22 +49,40 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok' });
 });
 
-// Serve static files
-app.use('/uploads', express.static('uploads'));
+// Serve static files from the 'public' directory (images, favicon, etc.)
+app.use(express.static(path.join(__dirname, 'public')));
 
-// Serve frontend build
+// Serve frontend build only in production
 if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, 'client/build')));
-  
+  // Serve the static assets (e.g., JS, CSS files) from the React app build folder
+  app.use(express.static(path.join(__dirname, 'client', 'build')));
+
+  // Handle all other routes and send the React 'index.html' for client-side routing
   app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'client/build', 'index.html'));
+    res.sendFile(path.join(__dirname, 'client', 'build', 'index.html'));
   });
+} else {
+  // For non-production (development), React app will be served by its own server (e.g., webpack dev server)
+  // Just serve static files from 'public'
+  app.use(express.static(path.join(__dirname, 'public')));
 }
-app.use((err, req, res, next) => {
-  console.error('Server Error:', err.stack);
-  res.status(500).send('Internal Server Error');
+
+// Upload route
+app.post("/upload", upload.array("images", 10), async (req, res) => {
+  try {
+    const images = req.files.map(file => `/uploads/${file.filename}`);
+    const newMemory = new Memory({
+      name: req.body.name || "Anonymous",
+      images,
+      message: req.body.message || ""
+    });
+    await newMemory.save();
+    res.status(201).json({ message: "Memory saved!" });
+    console.log("Upload route hit!");
+  } catch (error) {
+    res.status(500).json({ message: "Upload failed" });
+  }
 });
-console.log("Server starting...");
 
 // Database Connection
 mongoose.connect(process.env.MONGODB_URI, { 
@@ -74,6 +92,7 @@ mongoose.connect(process.env.MONGODB_URI, {
 })
 .then(() => console.log("✅ MongoDB Connected"))
 .catch(err => console.error("❌ MongoDB Connection Error:", err));
+
 
 // Models
 const MemorySchema = new mongoose.Schema({
@@ -170,16 +189,7 @@ app.get("/api/memories", authMiddleware, async (req, res) => {
   }
 });
 
-
-
-// Production static files (keep below routes)
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, 'build')));
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'build', 'index.html'));
-  });
-}
-// Add after all routes
+// Add error handling middleware
 app.use((err, req, res, next) => {
   console.error("💥 Server Error:", err);
   res.status(500).json({ error: "Internal server error" });
