@@ -73,13 +73,13 @@ if (process.env.NODE_ENV === 'production') {
 app.post("/upload", upload.array("images", 10), async (req, res) => {
   try {
     const images = req.files.map(file => `/uploads/${file.filename}`);
-    const newStory = new Story({
+    const newMemory = new Memory({
       name: req.body.name || "Anonymous",
       images,
       message: req.body.message || ""
     });
-    await newStory.save();
-    res.status(201).json({ message: "Story saved!" });
+    await newMemory.save();
+    res.status(201).json({ message: "Memory saved!" });
     console.log("Upload route hit!");
   } catch (error) {
     res.status(500).json({ message: "Upload failed" });
