@@ -32,8 +32,8 @@ const upload = multer({
 // Middleware
 app.use(express.json());
 const allowedOrigins = [
-  'https://wedding-plan-beta.vercel.app/', // Add this
-  'https://ido-cvwh.onrender.com/',
+  'https://wedding-plan-beta.vercel.app', // Add this
+  'https://ido-cvwh.onrender.com',
   'http://localhost:3000'
 ];
 
