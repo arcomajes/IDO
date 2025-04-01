@@ -9,7 +9,8 @@ export default function Dashboard() {
   const [name, setName] = useState("");
   const [images, setImages] = useState([]);
   const [message, setMessage] = useState("");
-  const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5001";
+  const API_BASE_URL = process.env.REACT_APP_BACKEND_URL;
+
   
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
@@ -34,7 +35,7 @@ export default function Dashboard() {
     formData.append("message", message || "");
   
     try {
-      await axios.post(`${API_URL}/upload`, formData, {
+      await axios.post(`${API_BASE_URL}/upload`, formData, {
         headers: { 
           "Content-Type": "multipart/form-data",
         },
