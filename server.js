@@ -15,12 +15,7 @@ if (!fs.existsSync('uploads')) {
 }
 
 const app = express();
-const allowedOrigins = [
-  'http://localhost:3000',
-  'https://ido-9cvq.vercel.app', 
-  'https://yesido.onrender.com',
-  'https://ido-9cvq.vercel.app/'
-];
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, 'uploads/');
@@ -37,9 +32,15 @@ const upload = multer({
 // Middleware
 app.use(express.json());
 app.use(cors({
-  origin: allowedOrigins,
-  credentials: true
+  origin: [
+    'http://localhost:3000',
+    'https://ido-9cvq.vercel.app',
+    'https://yesido.onrender.com'
+  ],
+  credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -116,6 +117,25 @@ const authMiddleware = (req, res, next) => {
   }
 };
 
+
+// Public Upload Route
+app.post("/upload", upload.array("images", 10), async (req, res) => {
+  try {
+    const images = req.files.map(file => `/uploads/${file.filename}`);
+    const newMemory = new Memory({
+      name: req.body.name || "Anonymous",
+      images,
+      message: req.body.message || ""
+    });
+    await newMemory.save();
+    res.status(201).json({ message: "Memory saved!" });
+    console.log("Upload route hit!");
+  } catch (error) {
+    res.status(500).json({ message: "Upload failed" });
+  }
+});
+
+
 // Routes
 app.post("/api/login", async (req, res) => {
   try {
@@ -145,22 +165,7 @@ app.get("/api/memories", authMiddleware, async (req, res) => {
   }
 });
 
-// Public Upload Route
-app.post("/upload", upload.array("images", 10), async (req, res) => {
-  try {
-    const images = req.files.map(file => `/uploads/${file.filename}`);
-    const newMemory = new Memory({
-      name: req.body.name || "Anonymous",
-      images,
-      message: req.body.message || ""
-    });
-    await newMemory.save();
-    res.status(201).json({ message: "Memory saved!" });
-    console.log("Upload route hit!");
-  } catch (error) {
-    res.status(500).json({ message: "Upload failed" });
-  }
-});
+
 
 // Production static files (keep below routes)
 if (process.env.NODE_ENV === 'production') {

@@ -16,18 +16,21 @@ export default function Admin() {
     const token = localStorage.getItem("token")
     if (!token) navigate("/login")
 
-    const fetchMemories = async () => {
-      try {
-        const res = await axios.get(`${API_URL}/api/memories`, {
-          headers: { Authorization: `Bearer ${token}` },
-        })
-        setMemories(res.data)
-        setLoading(false)
-      } catch (error) {
-        console.error("Error fetching memories:", error)
-        navigate("/login")
-      }
-    }
+      const fetchMemories = async () => {
+        try {
+          const res = await axios.get(`${API_URL}/api/memories`, {
+            headers: { 
+              Authorization: `Bearer ${localStorage.getItem('token')}`
+            },
+            withCredentials: true
+          });
+          setMemories(res.data);
+          setLoading(false);
+        } catch (error) {
+          console.error("Error fetching memories:", error);
+          navigate("/login");
+        }
+      };
     fetchMemories()
   }, [navigate, API_URL])
 
@@ -76,7 +79,12 @@ export default function Admin() {
           memory.images.map((image, index) => (
             <div key={`${memory._id}-${index}`} className={`memory-card color-${index % 3}`}>
               <div className="image-container" onClick={() => handleImageClick(`${API_URL}/${image}`)}>
-                <img src={`${API_URL}/${image}`} alt={`Memory ${index + 1}`} className="memory-image" />
+              <img 
+                src={`${API_URL}/${image}`} 
+                alt={`Memory ${index + 1}`} 
+                className="memory-image" 
+                onClick={() => handleImageClick(`${API_URL}/${image}`)}
+              />
               </div>
               <div className="card-content">
                 <h2 className="memory-title">Memory {index + 1}</h2>
