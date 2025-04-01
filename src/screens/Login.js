@@ -7,7 +7,7 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
-  const API_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:5001";
+  const API_BASE_URL = "https://ido-cvwh.onrender.com";
 
   useEffect(() => {
     // Create a reference to the handler function
@@ -33,7 +33,7 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post(`${API_URL}/api/login`, {
+      const res = await axios.post(`${API_BASE_URL}/api/login`, {
         username,
         password
       });

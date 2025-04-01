@@ -10,7 +10,7 @@ export default function Admin() {
   const [loading, setLoading] = useState(true)
   const [selectedImage, setSelectedImage] = useState(null) // For image modal
   const navigate = useNavigate()
-  const API_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:5001";
+  const API_BASE_URL = "https://ido-cvwh.onrender.com";
 
   useEffect(() => {
     const token = localStorage.getItem("token")
@@ -18,7 +18,7 @@ export default function Admin() {
 
       const fetchMemories = async () => {
         try {
-          const res = await axios.get(`${API_URL}/api/memories`, {
+          const res = await axios.get(`${API_BASE_URL}/api/memories`, {
             headers: { 
               Authorization: `Bearer ${localStorage.getItem('token')}`
             },
@@ -32,7 +32,7 @@ export default function Admin() {
         }
       };
     fetchMemories()
-  }, [navigate, API_URL])
+  }, [navigate, API_BASE_URL])
 
   const handleLogout = () => {
     localStorage.removeItem("token")
@@ -41,7 +41,7 @@ export default function Admin() {
 
   const handleDownload = async (imagePath) => {
     try {
-      const response = await fetch(`${API_URL}/${imagePath}`)
+      const response = await fetch(`${API_BASE_URL}/${imagePath}`)
       const blob = await response.blob()
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement("a")
@@ -78,12 +78,12 @@ export default function Admin() {
         {memories.map((memory) =>
           memory.images.map((image, index) => (
             <div key={`${memory._id}-${index}`} className={`memory-card color-${index % 3}`}>
-              <div className="image-container" onClick={() => handleImageClick(`${API_URL}/${image}`)}>
+              <div className="image-container" onClick={() => handleImageClick(`${API_BASE_URL}/${image}`)}>
               <img 
                 src={image} 
                 alt={`Memory ${index + 1}`} 
                 className="memory-image" 
-                onClick={() => handleImageClick(`${API_URL}/${image}`)}
+                onClick={() => handleImageClick(`${API_BASE_URL}/${image}`)}
               />
               </div>
               <div className="card-content">
