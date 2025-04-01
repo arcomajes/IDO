@@ -68,6 +68,7 @@ if (process.env.NODE_ENV === 'production') {
   // Just serve static files from 'public'
   app.use(express.static(path.join(__dirname, 'public')));
 }
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Upload route
 app.post("/upload", upload.array("images", 10), async (req, res) => {
@@ -174,11 +175,16 @@ app.post("/api/login", async (req, res) => {
 app.get("/api/memories", authMiddleware, async (req, res) => {
   try {
     const memories = await Memory.find();
-    res.json(memories);
+    const formattedMemories = memories.map(memory => ({
+      ...memory._doc,
+      images: memory.images.map(img => `https://ido-cvwh.onrender.com${img}`)
+    }));
+    res.json(formattedMemories);
   } catch (error) {
     res.status(500).json({ message: "Error fetching memories" });
   }
 });
+
 // Protected Routes
 app.get("/api/stories", authMiddleware, async (req, res) => {
   try {
