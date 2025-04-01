@@ -7,7 +7,7 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
-  const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5001";
+  const API_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:5001";
 
   useEffect(() => {
     // Create a reference to the handler function

@@ -5,14 +5,21 @@ const cors = require("cors");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const path = require("path");
+const fs = require('fs');
 require("dotenv").config();
+require('v8').setFlagsFromString('--max-old-space-size=4096');
+
+if (!fs.existsSync('uploads')) {
+  fs.mkdirSync('uploads');
+  console.log('Created uploads directory');
+}
 
 const app = express();
-
 const allowedOrigins = [
   'http://localhost:3000',
   'https://ido-9cvq.vercel.app', 
-  'https://yesido.onrender.com'
+  'https://yesido.onrender.com',
+  'https://ido-9cvq.vercel.app/'
 ];
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -23,40 +30,25 @@ const storage = multer.diskStorage({
   }
 });
 
-app.use(cors({
-  origin: allowedOrigins,
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE'], // Add allowed methods
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', // Add mobile headers
-    'Accept',
-    'Origin'] // Add necessary headers
-}));
-app.options('*', cors());
-// Middleware
-app.use(express.json());
-
 const upload = multer({ 
   storage,
   limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
 });
+// Middleware
+app.use(express.json());
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true
+}));
 
-app.use((req, res, next) => {
-  if (process.env.NODE_ENV === 'production' && !req.secure) {
-    return res.redirect('https://' + req.headers.host + req.url);
-  }
-  next();
-});
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok' });
 });
 
-// Serve uploaded files with proper cache headers
-app.use('/uploads', express.static('uploads', {
-  setHeaders: (res, path) => {
-    res.set('Cache-Control', 'public, max-age=31557600'); // 1 year cache
-  }
-}));
+// Serve static files
+app.use('/uploads', express.static('uploads'));
+
 // Serve frontend build
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, 'client/build')));
@@ -65,18 +57,8 @@ if (process.env.NODE_ENV === 'production') {
     res.sendFile(path.join(__dirname, 'client/build', 'index.html'));
   });
 }
-// Add after CORS middleware
-app.use(express.urlencoded({ extended: true })); // For mobile form data
 
-// Add mobile-specific body parser
-app.use((req, res, next) => {
-  if(req.headers['content-type']?.startsWith('multipart/form-data')) {
-    express.json()(req, res, next);
-  } else {
-    next();
-  }
-});
-
+console.log("Server starting...");
 
 // Database Connection
 mongoose.connect(process.env.MONGODB_URI, { 
@@ -164,43 +146,35 @@ app.get("/api/memories", authMiddleware, async (req, res) => {
 });
 
 // Public Upload Route
-// Modify your upload route
 app.post("/upload", upload.array("images", 10), async (req, res) => {
   try {
-    // Mobile-friendly response
-    const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
-    const images = req.files.map(file => 
-      `${protocol}://${req.get('host')}/${file.path.replace(/\\/g, '/')}`
-    );
-
+    const images = req.files.map(file => `/uploads/${file.filename}`);
     const newMemory = new Memory({
       name: req.body.name || "Anonymous",
       images,
       message: req.body.message || ""
     });
-
     await newMemory.save();
-    
-    res.status(201).json({ 
-      message: "Memory saved!",
-      images // Return full URLs for mobile
-    });
+    res.status(201).json({ message: "Memory saved!" });
+    console.log("Upload route hit!");
   } catch (error) {
-    console.error('Upload error:', error);
-    res.status(500).json({ 
-      message: "Upload failed",
-      error: process.env.NODE_ENV === 'development' ? error.message : null
-    });
+    res.status(500).json({ message: "Upload failed" });
   }
 });
 
-
+// Production static files (keep below routes)
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, 'client/build')));
   app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'client/build', 'index.html'));
   });
 }
+// Add after all routes
+app.use((err, req, res, next) => {
+  console.error("💥 Server Error:", err);
+  res.status(500).json({ error: "Internal server error" });
+});
 
 const PORT = process.env.PORT || 5001;
+console.log(`Configured port: ${PORT}`);
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

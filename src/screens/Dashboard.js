@@ -30,34 +30,24 @@ export default function Dashboard() {
   
     const formData = new FormData();
     formData.append("name", name || "Anonymous");
-    // Correct way to append multiple files
-    images.forEach((image) => {
-      formData.append("images", image); // Field name must match server's upload.array('images')
-    });
+    images.forEach((image) => formData.append("images", image));
     formData.append("message", message || "");
   
     try {
-      const response = await axios.post(`${API_URL}/upload`, formData, {
-        headers: {
+      await axios.post(`${API_URL}/upload`, formData, {
+        headers: { 
           "Content-Type": "multipart/form-data",
         },
       });
-  
-      if (response.data.images) {
-        alert(`Uploaded ${response.data.images.length} images successfully!`);
-      } else {
-        alert("Memory uploaded successfully!");
-      }
-      
+      alert("Memory uploaded successfully!");
       setName("");
       setImages([]);
       setMessage("");
     } catch (err) {
-      console.error('Upload error:', err);
-      alert(`Upload failed: ${err.response?.data?.message || err.message}`);
+      console.error("Upload error:", err);
+      alert("Upload failed. Please try again.");
     }
   };
-  
 
   const weddingDetails = {
     couple: {
@@ -177,7 +167,7 @@ export default function Dashboard() {
     <div className="hashtag-display">#KevinAndEstrelWedding</div>
     <div className="upload-form">
       <h2>Upload Memories</h2>
-      <form onSubmit={handleSubmit} encType="multipart/form-data"> 
+      <form onSubmit={handleSubmit}>
         <div className="form-group">
           <label>Your Name:</label>
           <input 
@@ -197,7 +187,6 @@ export default function Dashboard() {
                 className="file-input" 
                 multiple 
                 onChange={handleImageUpload}
-                capture="environment" 
               />
             </label>
           </div>
@@ -226,23 +215,6 @@ export default function Dashboard() {
     </div>
   </div>
 </section>
-
-{/* RSVP Section */}
-<section id="rsvp" className="mb-16">
-  <div className="section-header">
-  <div className="divider"></div>
-    <h2>RSVP</h2>
-    <div className="divider"></div>
-  </div>
-  <div className="rsvp-card">
-    <div className="rsvp-header">
-      <h3>We hope you can join us!</h3>
-      <p>Please RSVP by March 6, 2025</p>
-    </div>
-    {/* RSVP form would go here */}
-  </div>
-</section>
-
           {/* Footer */}
           <footer className="footer">
             <div className="footer-hearts"></div>

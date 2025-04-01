@@ -10,7 +10,7 @@ export default function Admin() {
   const [loading, setLoading] = useState(true)
   const [selectedImage, setSelectedImage] = useState(null) // For image modal
   const navigate = useNavigate()
-  const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5001";
+  const API_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:5001";
 
   useEffect(() => {
     const token = localStorage.getItem("token")
