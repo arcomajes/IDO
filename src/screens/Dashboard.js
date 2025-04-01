@@ -38,6 +38,7 @@ export default function Dashboard() {
       await axios.post(`${API_BASE_URL}/upload`, formData, {
         headers: { 
           "Content-Type": "multipart/form-data",
+          //"Access-Control-Allow-Origin": "https://wedding-plan-beta.vercel.app",
         },
         withCredentials: true // Uncomment if using credentials
       });
