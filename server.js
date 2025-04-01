@@ -15,6 +15,14 @@ if (!fs.existsSync('uploads')) {
 }
 
 const app = express();
+// Allow CORS for frontend domain
+app.use(cors({
+  origin: "https://wedding-plan-beta.vercel.app", // Your frontend domain
+  methods: "GET,POST,PUT,DELETE",
+  allowedHeaders: "Content-Type,Authorization",
+  credentials: true
+}));
+
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -31,25 +39,10 @@ const upload = multer({
 });
 // Middleware
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.set('trust proxy', 1);
-const allowedOrigins = [
-  'https://wedding-plan-beta.vercel.app', // Add this
-  'https://ido-cvwh.onrender.com',
-  'http://localhost:3000'
-];
 
-app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+
 
 
 // Health check endpoint
