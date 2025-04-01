@@ -57,11 +57,11 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Serve frontend build only in production
 if (process.env.NODE_ENV === 'production') {
   // Serve the static assets (e.g., JS, CSS files) from the React app build folder
-  app.use(express.static(path.join(__dirname, 'client', 'build')));
+  app.use(express.static(path.join(__dirname, 'build')));
 
   // Handle all other routes and send the React 'index.html' for client-side routing
   app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'client', 'build', 'index.html'));
+    res.sendFile(path.join(__dirname, 'build', 'index.html'));
   });
 } else {
   // For non-production (development), React app will be served by its own server (e.g., webpack dev server)
