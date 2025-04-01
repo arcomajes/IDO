@@ -15,6 +15,15 @@ if (!fs.existsSync('uploads')) {
 }
 
 const app = express();
+// Allow CORS for frontend domain
+app.use(cors({
+  origin: ["https://wedding-plan-beta.vercel.app", "http://localhost:3000"], // Your frontend domain
+  //origin: "*",
+  methods: "GET,POST,PUT,DELETE",
+  allowedHeaders: "Content-Type,Authorization",
+  credentials: true
+}));
+
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -31,25 +40,10 @@ const upload = multer({
 });
 // Middleware
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.set('trust proxy', 1);
-const allowedOrigins = [
-  'https://wedding-plan-beta.vercel.app', // Add this
-  'https://ido-cvwh.onrender.com',
-  'http://localhost:3000'
-];
 
-app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+
 
 
 // Health check endpoint
@@ -63,11 +57,11 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Serve frontend build only in production
 if (process.env.NODE_ENV === 'production') {
   // Serve the static assets (e.g., JS, CSS files) from the React app build folder
-  app.use(express.static(path.join(__dirname, 'client', 'build')));
+  app.use(express.static(path.join(__dirname, 'build')));
 
   // Handle all other routes and send the React 'index.html' for client-side routing
   app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'client', 'build', 'index.html'));
+    res.sendFile(path.join(__dirname, 'build', 'index.html'));
   });
 } else {
   // For non-production (development), React app will be served by its own server (e.g., webpack dev server)
@@ -79,13 +73,13 @@ if (process.env.NODE_ENV === 'production') {
 app.post("/upload", upload.array("images", 10), async (req, res) => {
   try {
     const images = req.files.map(file => `/uploads/${file.filename}`);
-    const newMemory = new Memory({
+    const newStory = new Story({
       name: req.body.name || "Anonymous",
       images,
       message: req.body.message || ""
     });
-    await newMemory.save();
-    res.status(201).json({ message: "Memory saved!" });
+    await newStory.save();
+    res.status(201).json({ message: "Story saved!" });
     console.log("Upload route hit!");
   } catch (error) {
     res.status(500).json({ message: "Upload failed" });
@@ -108,6 +102,14 @@ const MemorySchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 const Memory = mongoose.model("Memory", MemorySchema);
+
+const StorySchema = new mongoose.Schema({
+  name: String,
+  images: [String],
+  message: String,
+  createdAt: { type: Date, default: Date.now }
+});
+const Story = mongoose.model("Story", StorySchema);
 
 const UserSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
@@ -175,6 +177,15 @@ app.get("/api/memories", authMiddleware, async (req, res) => {
     res.json(memories);
   } catch (error) {
     res.status(500).json({ message: "Error fetching memories" });
+  }
+});
+// Protected Routes
+app.get("/api/stories", authMiddleware, async (req, res) => {
+  try {
+    const stories = await Story.find();
+    res.json(stories);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching stories" });
   }
 });
 

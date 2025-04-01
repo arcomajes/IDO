@@ -9,7 +9,8 @@ export default function Dashboard() {
   const [name, setName] = useState("");
   const [images, setImages] = useState([]);
   const [message, setMessage] = useState("");
-  const API_BASE_URL = process.env.REACT_APP_BACKEND_URL;
+  const API_BASE_URL = "https://ido-cvwh.onrender.com"; // Ensure this is correct
+
   
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
@@ -37,6 +38,7 @@ export default function Dashboard() {
       await axios.post(`${API_BASE_URL}/upload`, formData, {
         headers: { 
           "Content-Type": "multipart/form-data",
+          //"Access-Control-Allow-Origin": "https://wedding-plan-beta.vercel.app",
         },
         withCredentials: true // Uncomment if using credentials
       });
