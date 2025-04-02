@@ -40,7 +40,6 @@ export default function Dashboard() {
           "Content-Type": "multipart/form-data",
           //"Access-Control-Allow-Origin": "https://wedding-plan-beta.vercel.app",
         },
-        withCredentials: true // Uncomment if using credentials
       });
       alert("Memory uploaded successfully!");
       setName("");
