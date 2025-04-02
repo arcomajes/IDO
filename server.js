@@ -51,24 +51,6 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok' });
 });
 
-// Serve static files from the 'public' directory (images, favicon, etc.)
-app.use(express.static(path.join(__dirname, 'public')));
-
-// Serve frontend build only in production
-if (process.env.NODE_ENV === 'production') {
-  // Serve the static assets (e.g., JS, CSS files) from the React app build folder
-  app.use(express.static(path.join(__dirname, 'build')));
-
-  // Handle all other routes and send the React 'index.html' for client-side routing
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'build', 'index.html'));
-  });
-} else {
-  // For non-production (development), React app will be served by its own server (e.g., webpack dev server)
-  // Just serve static files from 'public'
-  app.use(express.static(path.join(__dirname, 'public')));
-}
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Upload route
 app.post("/upload", upload.array("images", 10), async (req, res) => {
@@ -104,13 +86,6 @@ const MemorySchema = new mongoose.Schema({
 });
 const Memory = mongoose.model("Memory", MemorySchema);
 
-const StorySchema = new mongoose.Schema({
-  name: String,
-  images: [String],
-  message: String,
-  createdAt: { type: Date, default: Date.now }
-});
-const Story = mongoose.model("Story", StorySchema);
 
 const UserSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
@@ -185,15 +160,25 @@ app.get("/api/memories", authMiddleware, async (req, res) => {
   }
 });
 
-// Protected Routes
-app.get("/api/stories", authMiddleware, async (req, res) => {
-  try {
-    const stories = await Story.find();
-    res.json(stories);
-  } catch (error) {
-    res.status(500).json({ message: "Error fetching stories" });
-  }
-});
+// Serve static files from the 'public' directory (images, favicon, etc.)
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Serve frontend build only in production
+if (process.env.NODE_ENV === 'production') {
+  // Serve the static assets (e.g., JS, CSS files) from the React app build folder
+  app.use(express.static(path.join(__dirname, 'build')));
+
+  // Handle all other routes and send the React 'index.html' for client-side routing
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'build', 'index.html'));
+  });
+} else {
+  // For non-production (development), React app will be served by its own server (e.g., webpack dev server)
+  // Just serve static files from 'public'
+  app.use(express.static(path.join(__dirname, 'public')));
+}
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 
 // Add error handling middleware
 app.use((err, req, res, next) => {

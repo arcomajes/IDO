@@ -6,33 +6,42 @@ import { useNavigate } from "react-router-dom"
 import "./Admin.css"
 
 export default function Admin() {
-  const [memories, setMemories] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [selectedImage, setSelectedImage] = useState(null) // For image modal
-  const navigate = useNavigate()
+  const [memories, setMemories] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedImage, setSelectedImage] = useState(null); // For image modal
+  const navigate = useNavigate();
   const API_BASE_URL = "https://ido-cvwh.onrender.com";
 
   useEffect(() => {
-    const token = localStorage.getItem("token")
-    if (!token) navigate("/login")
+    const token = localStorage.getItem("token");
+    if (!token) navigate("/login");
 
-      const fetchMemories = async () => {
-        try {
-          const res = await axios.get(`${API_BASE_URL}/api/memories`, {
-            headers: { 
-              Authorization: `Bearer ${localStorage.getItem('token')}`
-            },
-            withCredentials: true
-          });
+    const fetchMemories = async () => {
+      try {
+        const res = await axios.get(`${API_BASE_URL}/api/memories`, {
+          headers: { 
+            Authorization: `Bearer ${token}`
+          },
+          withCredentials: true
+        });
+        console.log("API Response:", res.data); // Debugging log
+        
+        if (Array.isArray(res.data)) {
           setMemories(res.data);
-          setLoading(false);
-        } catch (error) {
-          console.error("Error fetching memories:", error);
-          navigate("/login");
+        } else {
+          console.error("Invalid response format:", res.data);
+          setMemories([]); // Fallback to empty array
         }
-      };
-    fetchMemories()
-  }, [navigate, API_BASE_URL])
+      } catch (error) {
+        console.error("Error fetching memories:", error);
+        navigate("/login");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMemories();
+  }, [navigate]);
 
   const handleLogout = () => {
     localStorage.removeItem("token")
@@ -41,7 +50,7 @@ export default function Admin() {
 
   const handleDownload = async (imagePath) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/${imagePath}`)
+      const response = await fetch(imagePath)
       const blob = await response.blob()
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement("a")
@@ -83,7 +92,7 @@ export default function Admin() {
                 src={image} 
                 alt={`Memory ${index + 1}`} 
                 className="memory-image" 
-                onClick={() => handleImageClick(`${API_BASE_URL}/${image}`)}
+                onClick={() => handleImageClick(image)}
               />
               </div>
               <div className="card-content">
