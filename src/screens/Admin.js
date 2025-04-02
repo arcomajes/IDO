@@ -87,7 +87,7 @@ export default function Admin() {
         {memories.map((memory) =>
           memory.images.map((image, index) => (
             <div key={`${memory._id}-${index}`} className={`memory-card color-${index % 3}`}>
-              <div className="image-container" onClick={() => handleImageClick(`${API_BASE_URL}/${image}`)}>
+              <div className="image-container" onClick={() => handleImageClick(image)}>
               <img 
                 src={image} 
                 alt={`Memory ${index + 1}`} 

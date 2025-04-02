@@ -55,7 +55,7 @@ app.get('/health', (req, res) => {
 // Upload route
 app.post("/upload", upload.array("images", 10), async (req, res) => {
   try {
-    const images = req.files.map(file => `/uploads/${file.filename}`);
+    const images = req.files.map(file => file.path);
     const newMemory = new Memory({
       name: req.body.name || "Anonymous",
       images,
@@ -160,6 +160,25 @@ app.get("/api/memories", authMiddleware, async (req, res) => {
   }
 });
 
+// Public Upload Route
+app.post("/upload", upload.array("images", 10), async (req, res) => {
+  try {
+    const images = req.files.map(file => file.path);
+    const newMemory = new Memory({
+      name: req.body.name || "Anonymous",
+      images,
+      message: req.body.message || ""
+    });
+    await newMemory.save();
+    res.status(201).json({ message: "Memory saved!" });
+  } catch (error) {
+    res.status(500).json({ message: "Upload failed" });
+  }
+});
+
+app.use('/uploads', express.static('uploads'));
+app.use('/uploads', express.static(path.resolve(__dirname, 'uploads')));
+
 // Serve static files from the 'public' directory (images, favicon, etc.)
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -177,8 +196,6 @@ if (process.env.NODE_ENV === 'production') {
   // Just serve static files from 'public'
   app.use(express.static(path.join(__dirname, 'public')));
 }
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
 
 // Add error handling middleware
 app.use((err, req, res, next) => {
