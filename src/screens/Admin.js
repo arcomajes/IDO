@@ -61,70 +61,49 @@ export default function Admin() {
 
   const handleDownload = async (imagePath) => {
     try {
-      // Ensure the URL is absolute
-      const fullUrl = imagePath.startsWith('http') 
+      const fullUrl = imagePath.startsWith("http") 
         ? imagePath 
-        : `${API_BASE_URL}${imagePath.startsWith('/') ? imagePath : `/${imagePath}`}`;
-      
-      console.log('Downloading from URL:', fullUrl);
-      
-      // Fetch the image with proper headers
+        : `${API_BASE_URL}${imagePath.startsWith("/") ? imagePath : `/${imagePath}`}`;
+  
       const response = await fetch(fullUrl, {
-        headers: {
-          'Accept': 'image/*'
-        },
-        mode: 'cors'
+        headers: { "Accept": "image/*" },
+        mode: "cors"
       });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+  
+      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+  
+      // Extract MIME type
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.startsWith("image/")) {
+        throw new Error("Invalid file type");
       }
-
-      // Get content type and blob
-      const contentType = response.headers.get('content-type');
-      console.log('Content-Type:', contentType);
-      
-      // Get the array buffer
+  
       const arrayBuffer = await response.arrayBuffer();
-      const blob = new Blob([arrayBuffer], { type: contentType || 'image/jpeg' });
-      
-      // Create a download link
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      
-      // Extract filename and ensure proper extension
-      let filename = imagePath.split('/').pop() || 'downloaded-image';
-      
-      // If filename doesn't have an extension, add one based on content type
-      if (!filename.includes('.')) {
-        const extension = contentType?.split('/')[1] || 'jpg';
+      const blob = new Blob([arrayBuffer], { type: contentType });
+  
+      // Ensure correct filename and extension
+      let filename = decodeURIComponent(imagePath.split("/").pop() || "downloaded-image");
+      if (!filename.includes(".")) {
+        const extension = contentType.split("/")[1];
         filename = `${filename}.${extension}`;
       }
-      
-      // Ensure the filename has a valid extension
-      const validExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-      const currentExt = filename.split('.').pop().toLowerCase();
-      if (!validExtensions.includes(currentExt)) {
-        filename = `${filename.split('.')[0]}.jpg`;
-      }
-      
-      console.log('Downloading file:', filename);
+  
+      // Create a download link
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
       a.download = filename;
-      
-      // Trigger download
       document.body.appendChild(a);
       a.click();
-      
-      // Cleanup
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
+  
     } catch (error) {
       console.error("Download error:", error);
       alert("Failed to download image. Please try again.");
     }
-  }
-
+  };
+  
   const handleImageClick = (image) => {
     setSelectedImage(image)
   }
