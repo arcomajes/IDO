@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import axios from "axios"
 import { useNavigate } from "react-router-dom"
 import "./Admin.css"
+import mime from 'mime-types';
 
 export default function Admin() {
   const [memories, setMemories] = useState([]);
@@ -59,56 +60,42 @@ export default function Admin() {
     navigate("/login")
   }
 
-  const handleDownload = async (imagePath) => {
+  const handleDownload = async (imageUrl) => {
     try {
-      const fullUrl = imagePath.startsWith('http') 
-        ? imagePath 
-        : `${API_BASE_URL}${imagePath.startsWith('/') ? imagePath : `/${imagePath}`}`;
-  
-      const response = await fetch(fullUrl, {
-        headers: { 'Accept': 'image/*' },
-        mode: 'cors'
-      });
-  
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-  
+      // Fetch with cache-busting
+      const response = await fetch(`${imageUrl}?t=${Date.now()}`);
+      
+      // Get metadata from headers
       const contentType = response.headers.get('content-type');
-      const arrayBuffer = await response.arrayBuffer();
-      const blob = new Blob([arrayBuffer], { type: contentType || 'image/jpeg' });
+      const contentDisposition = response.headers.get('content-disposition');
+      
+      // Extract filename with priority:
+      // 1. Content-Disposition header
+      // 2. URL path
+      let filename = contentDisposition 
+        ? contentDisposition.split('filename=')[1].replace(/"/g, '')
+        : imageUrl.split('/').pop();
   
-      // Extract filename from URL
-      const urlPath = new URL(fullUrl).pathname;
-      let filename = urlPath.split('/').pop() || 'downloaded-image';
-  
-      // Determine extension from Content-Type or filename
-      const extFromContent = contentType?.split('/')[1] || 'jpg';
-      const extFromFilename = filename.split('.').pop().toLowerCase();
-      const validExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-  
-      // Use valid extension from Content-Type if filename's is invalid
-      const validExt = validExtensions.includes(extFromFilename) 
-        ? extFromFilename 
-        : validExtensions.includes(extFromContent) 
-          ? extFromContent 
-          : 'jpg';
-  
-      // Ensure filename has valid extension
-      if (!filename.includes('.') || !validExtensions.includes(extFromFilename)) {
-        filename = `${filename.split('.')[0]}.${validExt}`;
+      // Add extension if missing
+      if (!filename.includes('.')) {
+        const ext = mime.extension(contentType) || 'bin';
+        filename = `${filename}.${ext}`;
       }
   
-      // Trigger download
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      // Create download
+      const blob = await response.blob();
+      const tempLink = document.createElement('a');
+      tempLink.href = URL.createObjectURL(blob);
+      tempLink.download = filename;
+      tempLink.style.display = 'none';
+      document.body.appendChild(tempLink);
+      tempLink.click();
+      document.body.removeChild(tempLink);
+      URL.revokeObjectURL(tempLink.href);
+  
     } catch (error) {
-      console.error("Download error:", error);
-      alert("Failed to download image. Please try again.");
+      console.error('Download error:', error);
+      alert('Error downloading image. Please try again.');
     }
   };
   

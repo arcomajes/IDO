@@ -6,6 +6,7 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const path = require("path");
 const fs = require('fs');
+const mime = require('mime-types');
 require('v8').setFlagsFromString('--max-old-space-size=4096');
 require("dotenv").config();
 
@@ -15,6 +16,7 @@ if (!fs.existsSync('uploads')) {
 }
 
 const app = express();
+app.use(express.json());
 // Allow CORS for frontend domain
 app.use(cors({
   origin: ["https://wedding-plan-beta.vercel.app", "http://localhost:3000"], // Your frontend domain
@@ -26,11 +28,12 @@ app.use(cors({
 
 
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/');
-  },
+  destination: 'uploads/',
   filename: (req, file, cb) => {
-    cb(null, `${Date.now()}-${file.originalname}`);
+    // Preserve original extension or add from MIME type
+    const ext = path.extname(file.originalname) || `.${mime.extension(file.mimetype)}`;
+    const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
+    cb(null, uniqueName);
   }
 });
 
@@ -39,7 +42,7 @@ const upload = multer({
   limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
 });
 // Middleware
-app.use(express.json());
+
 const allowedOrigins = [
   'https://wedding-plan-beta.vercel.app', // Add this
   'https://ido-cvwh.onrender.com',
@@ -173,21 +176,11 @@ app.get("/api/memories", authMiddleware, async (req, res) => {
 });
 
 // Serve static files from uploads directory with proper MIME types
-app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
-  setHeaders: (res, path) => {
-    const ext = path.split('.').pop().toLowerCase();
-    const mimeTypes = {
-      'jpg': 'image/jpeg',
-      'jpeg': 'image/jpeg',
-      'png': 'image/png',
-      'gif': 'image/gif',
-      'webp': 'image/webp'
-    };
-    
-    if (mimeTypes[ext]) {
-      res.setHeader('Content-Type', mimeTypes[ext]);
-    }
-  }
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'), (req, res, next) => {
+  // Your header configuration
+  const mimeType = mime.lookup(req.path) || 'application/octet-stream';
+  res.setHeader('Content-Type', mimeType);
+  next();
 }));
 
 // Add a specific route for serving images with proper headers
