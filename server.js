@@ -157,11 +157,39 @@ app.post("/api/login", async (req, res) => {
 app.get("/api/memories", authMiddleware, async (req, res) => {
   try {
     const memories = await Memory.find();
-    res.json(memories);
+    const formattedMemories = memories.map(memory => ({
+      ...memory._doc,
+      images: memory.images.map(img => {
+        // Ensure consistent path format
+        const cleanPath = img.startsWith('/') ? img : `/${img}`;
+        return `${req.protocol}://${req.get('host')}${cleanPath}`;
+      })
+    }));
+    res.json(formattedMemories);
   } catch (error) {
     res.status(500).json({ message: "Error fetching memories" });
   }
 });
+
+// Serve static files from uploads directory
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Serve static files from the 'public' directory (images, favicon, etc.)
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Serve frontend build only in production
+if (process.env.NODE_ENV === 'production') {
+  // Serve the static assets (e.g., JS, CSS files) from the React app build folder
+  app.use(express.static(path.join(__dirname, 'build')));
+
+  // Handle all other routes and send the React 'index.html' for client-side routing
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'build', 'index.html'));
+  });
+} else {
+  // For non-production (development), React app will be served by its own server
+  app.use(express.static(path.join(__dirname, 'public')));
+}
 
 // Add error handling middleware
 app.use((err, req, res, next) => {
