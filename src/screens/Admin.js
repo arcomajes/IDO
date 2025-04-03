@@ -61,18 +61,39 @@ export default function Admin() {
 
   const handleDownload = async (imagePath) => {
     try {
-      const response = await fetch(imagePath)
-      const blob = await response.blob()
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement("a")
-      a.href = url
-      a.download = imagePath.split("/").pop()
-      document.body.appendChild(a)
-      a.click()
-      window.URL.revokeObjectURL(url)
-      document.body.removeChild(a)
+      // Ensure the URL is absolute
+      const fullUrl = imagePath.startsWith('http') 
+        ? imagePath 
+        : `${API_BASE_URL}${imagePath.startsWith('/') ? imagePath : `/${imagePath}`}`;
+      
+      // Fetch the image
+      const response = await fetch(fullUrl);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      // Get the blob
+      const blob = await response.blob();
+      
+      // Create a download link
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      
+      // Extract filename from URL
+      const filename = imagePath.split('/').pop() || 'downloaded-image.jpg';
+      a.download = filename;
+      
+      // Trigger download
+      document.body.appendChild(a);
+      a.click();
+      
+      // Cleanup
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
     } catch (error) {
-      console.error("Download error:", error)
+      console.error("Download error:", error);
+      alert("Failed to download image. Please try again.");
     }
   }
 
