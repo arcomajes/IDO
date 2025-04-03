@@ -66,22 +66,41 @@ export default function Admin() {
         ? imagePath 
         : `${API_BASE_URL}${imagePath.startsWith('/') ? imagePath : `/${imagePath}`}`;
       
-      // Fetch the image
-      const response = await fetch(fullUrl);
+      console.log('Downloading from URL:', fullUrl); // Debug log
+      
+      // Fetch the image with proper headers
+      const response = await fetch(fullUrl, {
+        headers: {
+          'Accept': 'image/*'
+        }
+      });
+      
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
+
+      // Get content type and blob
+      const contentType = response.headers.get('content-type');
+      console.log('Content-Type:', contentType); // Debug log
       
-      // Get the blob
       const blob = await response.blob();
+      console.log('Blob type:', blob.type); // Debug log
       
       // Create a download link
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       
-      // Extract filename from URL
-      const filename = imagePath.split('/').pop() || 'downloaded-image.jpg';
+      // Extract filename and ensure proper extension
+      let filename = imagePath.split('/').pop() || 'downloaded-image';
+      
+      // If filename doesn't have an extension, add one based on content type
+      if (!filename.includes('.')) {
+        const extension = contentType?.split('/')[1] || 'jpg';
+        filename = `${filename}.${extension}`;
+      }
+      
+      console.log('Downloading file:', filename); // Debug log
       a.download = filename;
       
       // Trigger download
