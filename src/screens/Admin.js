@@ -61,43 +61,51 @@ export default function Admin() {
 
   const handleDownload = async (imagePath) => {
     try {
-      const fullUrl = imagePath.startsWith("http") 
+      const fullUrl = imagePath.startsWith('http') 
         ? imagePath 
-        : `${API_BASE_URL}${imagePath.startsWith("/") ? imagePath : `/${imagePath}`}`;
+        : `${API_BASE_URL}${imagePath.startsWith('/') ? imagePath : `/${imagePath}`}`;
   
       const response = await fetch(fullUrl, {
-        headers: { "Accept": "image/*" },
-        mode: "cors"
+        headers: { 'Accept': 'image/*' },
+        mode: 'cors'
       });
   
-      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
   
-      // Extract MIME type
-      const contentType = response.headers.get("content-type");
-      if (!contentType || !contentType.startsWith("image/")) {
-        throw new Error("Invalid file type");
-      }
-  
+      const contentType = response.headers.get('content-type');
       const arrayBuffer = await response.arrayBuffer();
-      const blob = new Blob([arrayBuffer], { type: contentType });
+      const blob = new Blob([arrayBuffer], { type: contentType || 'image/jpeg' });
   
-      // Ensure correct filename and extension
-      let filename = decodeURIComponent(imagePath.split("/").pop() || "downloaded-image");
-      if (!filename.includes(".")) {
-        const extension = contentType.split("/")[1];
-        filename = `${filename}.${extension}`;
+      // Extract filename from URL
+      const urlPath = new URL(fullUrl).pathname;
+      let filename = urlPath.split('/').pop() || 'downloaded-image';
+  
+      // Determine extension from Content-Type or filename
+      const extFromContent = contentType?.split('/')[1] || 'jpg';
+      const extFromFilename = filename.split('.').pop().toLowerCase();
+      const validExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+  
+      // Use valid extension from Content-Type if filename's is invalid
+      const validExt = validExtensions.includes(extFromFilename) 
+        ? extFromFilename 
+        : validExtensions.includes(extFromContent) 
+          ? extFromContent 
+          : 'jpg';
+  
+      // Ensure filename has valid extension
+      if (!filename.includes('.') || !validExtensions.includes(extFromFilename)) {
+        filename = `${filename.split('.')[0]}.${validExt}`;
       }
   
-      // Create a download link
+      // Trigger download
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
+      const a = document.createElement('a');
       a.href = url;
       a.download = filename;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-  
     } catch (error) {
       console.error("Download error:", error);
       alert("Failed to download image. Please try again.");
