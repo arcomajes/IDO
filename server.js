@@ -40,10 +40,17 @@ const upload = multer({
 });
 // Middleware
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.set('trust proxy', 1);
+const allowedOrigins = [
+  'https://wedding-plan-beta.vercel.app', // Add this
+  'https://ido-cvwh.onrender.com',
+  'http://localhost:3000'
+];
 
-
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE']
+}));
 
 
 // Health check endpoint
@@ -150,52 +157,11 @@ app.post("/api/login", async (req, res) => {
 app.get("/api/memories", authMiddleware, async (req, res) => {
   try {
     const memories = await Memory.find();
-    const formattedMemories = memories.map(memory => ({
-      ...memory._doc,
-      images: memory.images.map(img => `https://ido-cvwh.onrender.com${img}`)
-    }));
-    res.json(formattedMemories);
+    res.json(memories);
   } catch (error) {
     res.status(500).json({ message: "Error fetching memories" });
   }
 });
-
-// Public Upload Route
-app.post("/upload", upload.array("images", 10), async (req, res) => {
-  try {
-    const images = req.files.map(file => file.path);
-    const newMemory = new Memory({
-      name: req.body.name || "Anonymous",
-      images,
-      message: req.body.message || ""
-    });
-    await newMemory.save();
-    res.status(201).json({ message: "Memory saved!" });
-  } catch (error) {
-    res.status(500).json({ message: "Upload failed" });
-  }
-});
-
-app.use('/uploads', express.static('uploads'));
-app.use('/uploads', express.static(path.resolve(__dirname, 'uploads')));
-
-// Serve static files from the 'public' directory (images, favicon, etc.)
-app.use(express.static(path.join(__dirname, 'public')));
-
-// Serve frontend build only in production
-if (process.env.NODE_ENV === 'production') {
-  // Serve the static assets (e.g., JS, CSS files) from the React app build folder
-  app.use(express.static(path.join(__dirname, 'build')));
-
-  // Handle all other routes and send the React 'index.html' for client-side routing
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'build', 'index.html'));
-  });
-} else {
-  // For non-production (development), React app will be served by its own server (e.g., webpack dev server)
-  // Just serve static files from 'public'
-  app.use(express.static(path.join(__dirname, 'public')));
-}
 
 // Add error handling middleware
 app.use((err, req, res, next) => {

@@ -27,7 +27,15 @@ export default function Admin() {
         console.log("API Response:", res.data); // Debugging log
         
         if (Array.isArray(res.data)) {
-          setMemories(res.data);
+          // Ensure all image URLs are absolute
+          const formattedMemories = res.data.map(memory => ({
+            ...memory,
+            images: memory.images.map(img => {
+              if (img.startsWith('http')) return img;
+              return `${API_BASE_URL}${img}`;
+            })
+          }));
+          setMemories(formattedMemories);
         } else {
           console.error("Invalid response format:", res.data);
           setMemories([]); // Fallback to empty array
@@ -41,6 +49,9 @@ export default function Admin() {
     };
 
     fetchMemories();
+    // Refresh memories every 30 seconds
+    const interval = setInterval(fetchMemories, 30000);
+    return () => clearInterval(interval);
   }, [navigate]);
 
   const handleLogout = () => {
