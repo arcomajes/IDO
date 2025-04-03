@@ -34,6 +34,7 @@ export default function Admin() {
         
         setMemories(formattedMemories);
       } catch (error) {
+        console.error("Fetch error:", error);
         navigate("/login");
       } finally {
         setLoading(false);
@@ -76,15 +77,16 @@ export default function Admin() {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
     } catch (error) {
+      console.error("Download error:", error);
       alert('Error downloading image. Please try again.');
     }
   };
-  
+
   const handleLogout = () => {
-    localStorage.removeItem("token")
-    navigate("/login")
+    localStorage.removeItem("token");
+    navigate("/login");
   }
-  
+
   const handleImageClick = (image) => {
     setSelectedImage(image)
   }

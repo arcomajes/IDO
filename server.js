@@ -17,7 +17,7 @@ app.use(cors({
   credentials: true
 }));
 
-// Multer configuration
+// Multer memory storage configuration
 const storage = multer.memoryStorage();
 const upload = multer({
   storage,
@@ -31,22 +31,24 @@ mongoose.connect(process.env.MONGODB_URI, {
 .then(() => console.log("✅ MongoDB Connected"))
 .catch(err => console.error("❌ MongoDB Connection Error:", err));
 
-// Models
+// Schema Definitions
 const MemorySchema = new mongoose.Schema({
   name: String,
   images: [{
-    data: String,
-    contentType: String
+    data: { type: String, required: true },
+    contentType: { type: String, required: true }
   }],
   message: String,
   createdAt: { type: Date, default: Date.now }
 });
+
 const Memory = mongoose.model("Memory", MemorySchema);
 
 const UserSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
   password: { type: String, required: true }
 });
+
 const User = mongoose.model("User", UserSchema);
 
 // Auth Middleware
@@ -80,7 +82,27 @@ app.post("/upload", upload.array("images", 10), async (req, res) => {
     await newMemory.save();
     res.status(201).json({ message: "Memory saved!" });
   } catch (error) {
+    console.error("Upload error:", error);
     res.status(500).json({ message: "Upload failed" });
+  }
+});
+
+app.get("/api/memories", authMiddleware, async (req, res) => {
+  try {
+    const memories = await Memory.find().sort({ createdAt: -1 });
+    res.json(memories.map(memory => ({
+      _id: memory._id,
+      name: memory.name,
+      message: memory.message,
+      images: memory.images.map(img => ({
+        data: img.data,
+        contentType: img.contentType
+      })),
+      createdAt: memory.createdAt
+    })));
+  } catch (error) {
+    console.error("Fetch memories error:", error);
+    res.status(500).json({ message: "Error fetching memories" });
   }
 });
 
@@ -102,14 +124,6 @@ app.post("/api/login", async (req, res) => {
   }
 });
 
-app.get("/api/memories", authMiddleware, async (req, res) => {
-  try {
-    const memories = await Memory.find().sort({ createdAt: -1 });
-    res.json(memories);
-  } catch (error) {
-    res.status(500).json({ message: "Error fetching memories" });
-  }
-});
 
 // Default admin setup
 const createDefaultUser = async () => {
