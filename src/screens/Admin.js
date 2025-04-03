@@ -66,13 +66,14 @@ export default function Admin() {
         ? imagePath 
         : `${API_BASE_URL}${imagePath.startsWith('/') ? imagePath : `/${imagePath}`}`;
       
-      console.log('Downloading from URL:', fullUrl); // Debug log
+      console.log('Downloading from URL:', fullUrl);
       
       // Fetch the image with proper headers
       const response = await fetch(fullUrl, {
         headers: {
           'Accept': 'image/*'
-        }
+        },
+        mode: 'cors'
       });
       
       if (!response.ok) {
@@ -81,10 +82,11 @@ export default function Admin() {
 
       // Get content type and blob
       const contentType = response.headers.get('content-type');
-      console.log('Content-Type:', contentType); // Debug log
+      console.log('Content-Type:', contentType);
       
-      const blob = await response.blob();
-      console.log('Blob type:', blob.type); // Debug log
+      // Get the array buffer
+      const arrayBuffer = await response.arrayBuffer();
+      const blob = new Blob([arrayBuffer], { type: contentType || 'image/jpeg' });
       
       // Create a download link
       const url = window.URL.createObjectURL(blob);
@@ -100,7 +102,14 @@ export default function Admin() {
         filename = `${filename}.${extension}`;
       }
       
-      console.log('Downloading file:', filename); // Debug log
+      // Ensure the filename has a valid extension
+      const validExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+      const currentExt = filename.split('.').pop().toLowerCase();
+      if (!validExtensions.includes(currentExt)) {
+        filename = `${filename.split('.')[0]}.jpg`;
+      }
+      
+      console.log('Downloading file:', filename);
       a.download = filename;
       
       // Trigger download
