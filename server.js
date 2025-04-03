@@ -4,80 +4,24 @@ const multer = require("multer");
 const cors = require("cors");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const path = require("path");
-const fs = require('fs');
-const mime = require('mime-types');
-require('v8').setFlagsFromString('--max-old-space-size=4096');
 require("dotenv").config();
 
-if (!fs.existsSync('uploads')) {
-  fs.mkdirSync('uploads');
-  console.log('Created uploads directory');
-}
-
 const app = express();
-app.use(express.json());
-// Allow CORS for frontend domain
+
+// Middleware
+app.use(express.json({ limit: '50mb' }));
 app.use(cors({
-  origin: ["https://wedding-plan-beta.vercel.app", "http://localhost:3000"], // Your frontend domain
-  //origin: "*",
+  origin: ["https://wedding-plan-beta.vercel.app", "http://localhost:3000"],
   methods: "GET,POST,PUT,DELETE",
   allowedHeaders: "Content-Type,Authorization",
   credentials: true
 }));
 
-
-const storage = multer.diskStorage({
-  destination: 'uploads/',
-  filename: (req, file, cb) => {
-    // Preserve original extension or add from MIME type
-    const ext = path.extname(file.originalname) || `.${mime.extension(file.mimetype)}`;
-    const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
-    cb(null, uniqueName);
-  }
-});
-
-const upload = multer({ 
+// Multer configuration
+const storage = multer.memoryStorage();
+const upload = multer({
   storage,
   limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
-});
-// Middleware
-
-const allowedOrigins = [
-  'https://wedding-plan-beta.vercel.app', // Add this
-  'https://ido-cvwh.onrender.com',
-  'http://localhost:3000'
-];
-
-app.use(cors({
-  origin: allowedOrigins,
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type']
-}));
-
-
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok' });
-});
-
-
-// Upload route
-app.post("/upload", upload.array("images", 10), async (req, res) => {
-  try {
-    const images = req.files.map(file => file.path);
-    const newMemory = new Memory({
-      name: req.body.name || "Anonymous",
-      images,
-      message: req.body.message || ""
-    });
-    await newMemory.save();
-    res.status(201).json({ message: "Memory saved!" });
-    console.log("Upload route hit!");
-  } catch (error) {
-    res.status(500).json({ message: "Upload failed" });
-  }
 });
 
 // Database Connection
@@ -87,40 +31,23 @@ mongoose.connect(process.env.MONGODB_URI, {
 .then(() => console.log("✅ MongoDB Connected"))
 .catch(err => console.error("❌ MongoDB Connection Error:", err));
 
-
 // Models
 const MemorySchema = new mongoose.Schema({
   name: String,
-  images: [String],
+  images: [{
+    data: String,
+    contentType: String
+  }],
   message: String,
   createdAt: { type: Date, default: Date.now }
 });
 const Memory = mongoose.model("Memory", MemorySchema);
-
 
 const UserSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
   password: { type: String, required: true }
 });
 const User = mongoose.model("User", UserSchema);
-
-// Create default admin
-const createDefaultUser = async () => {
-  try {
-    const existingUser = await User.findOne({ username: "Estrell&Kevin" });
-    if (!existingUser) {
-      const hashedPassword = await bcrypt.hash("Kevstrell0613", 10);
-      await User.create({
-        username: "Estrell&Kevin",
-        password: hashedPassword
-      });
-      console.log("✅ Default admin created");
-    }
-  } catch (error) {
-    console.error("❌ Error creating admin:", error);
-  }
-};
-createDefaultUser();
 
 // Auth Middleware
 const authMiddleware = (req, res, next) => {
@@ -136,9 +63,27 @@ const authMiddleware = (req, res, next) => {
   }
 };
 
-
-
 // Routes
+app.post("/upload", upload.array("images", 10), async (req, res) => {
+  try {
+    const images = req.files.map(file => ({
+      data: file.buffer.toString('base64'),
+      contentType: file.mimetype
+    }));
+
+    const newMemory = new Memory({
+      name: req.body.name || "Anonymous",
+      images,
+      message: req.body.message || ""
+    });
+
+    await newMemory.save();
+    res.status(201).json({ message: "Memory saved!" });
+  } catch (error) {
+    res.status(500).json({ message: "Upload failed" });
+  }
+});
+
 app.post("/api/login", async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -157,77 +102,32 @@ app.post("/api/login", async (req, res) => {
   }
 });
 
-// Protected Routes
 app.get("/api/memories", authMiddleware, async (req, res) => {
   try {
-    const memories = await Memory.find();
-    const formattedMemories = memories.map(memory => ({
-      ...memory._doc,
-      images: memory.images.map(img => {
-        // Ensure consistent path format
-        const cleanPath = img.startsWith('/') ? img : `/${img}`;
-        return `${req.protocol}://${req.get('host')}${cleanPath}`;
-      })
-    }));
-    res.json(formattedMemories);
+    const memories = await Memory.find().sort({ createdAt: -1 });
+    res.json(memories);
   } catch (error) {
     res.status(500).json({ message: "Error fetching memories" });
   }
 });
 
-// Serve static files from uploads directory with proper MIME types
-app.use('/uploads', express.static(path.join(__dirname, 'uploads'), (req, res, next) => {
-  // Your header configuration
-  const mimeType = mime.lookup(req.path) || 'application/octet-stream';
-  res.setHeader('Content-Type', mimeType);
-  next();
-}));
-
-// Add a specific route for serving images with proper headers
-app.get('/uploads/:filename', (req, res) => {
-  const filename = req.params.filename;
-  const filePath = path.join(__dirname, 'uploads', filename);
-  
-  // Set proper headers
-  const ext = filename.split('.').pop().toLowerCase();
-  const mimeTypes = {
-    'jpg': 'image/jpeg',
-    'jpeg': 'image/jpeg',
-    'png': 'image/png',
-    'gif': 'image/gif',
-    'webp': 'image/webp'
-  };
-  
-  if (mimeTypes[ext]) {
-    res.setHeader('Content-Type', mimeTypes[ext]);
+// Default admin setup
+const createDefaultUser = async () => {
+  try {
+    const existingUser = await User.findOne({ username: "Estrell&Kevin" });
+    if (!existingUser) {
+      const hashedPassword = await bcrypt.hash("Kevstrell0613", 10);
+      await User.create({
+        username: "Estrell&Kevin",
+        password: hashedPassword
+      });
+      console.log("✅ Default admin created");
+    }
+  } catch (error) {
+    console.error("❌ Error creating admin:", error);
   }
-  
-  res.sendFile(filePath);
-});
-
-// Serve static files from the 'public' directory (images, favicon, etc.)
-app.use(express.static(path.join(__dirname, 'public')));
-
-// Serve frontend build only in production
-if (process.env.NODE_ENV === 'production') {
-  // Serve the static assets (e.g., JS, CSS files) from the React app build folder
-  app.use(express.static(path.join(__dirname, 'build')));
-
-  // Handle all other routes and send the React 'index.html' for client-side routing
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'build', 'index.html'));
-  });
-} else {
-  // For non-production (development), React app will be served by its own server
-  app.use(express.static(path.join(__dirname, 'public')));
-}
-
-// Add error handling middleware
-app.use((err, req, res, next) => {
-  console.error("💥 Server Error:", err);
-  res.status(500).json({ error: "Internal server error" });
-});
+};
+createDefaultUser();
 
 const PORT = process.env.PORT || 5001;
-console.log(`Configured port: ${PORT}`);
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

@@ -12,33 +12,18 @@ export default function Dashboard() {
   const API_BASE_URL = "https://ido-cvwh.onrender.com"; // Ensure this is correct
 
   
-  const handleImageUpload = (e) => {
-    const files = Array.from(e.target.files);
-    if (files.length + images.length > 10) {
-      alert("You can only upload up to 10 images.");
-      return;
-    }
-    setImages([...images, ...files]);
-  };
-  
   const handleSubmit = async (e) => {
     e.preventDefault();
   
-    if (images.length === 0) {
-      alert("Please upload at least one image.");
-      return;
-    }
-  
     const formData = new FormData();
     formData.append("name", name || "Anonymous");
-    images.forEach((image) => formData.append("images", image));
+    images.forEach((image) => formData.append("images", image.file));
     formData.append("message", message || "");
   
     try {
       await axios.post(`${API_BASE_URL}/upload`, formData, {
         headers: { 
           "Content-Type": "multipart/form-data",
-          //"Access-Control-Allow-Origin": "https://wedding-plan-beta.vercel.app",
         },
       });
       alert("Memory uploaded successfully!");
@@ -46,10 +31,25 @@ export default function Dashboard() {
       setImages([]);
       setMessage("");
     } catch (err) {
-      console.error("Upload error:", err);
       alert("Upload failed. Please try again.");
     }
   };
+  
+  // Update image state management
+  const handleImageUpload = (e) => {
+    const files = Array.from(e.target.files).map(file => ({
+      file,
+      preview: URL.createObjectURL(file)
+    }));
+    
+    if (files.length + images.length > 10) {
+      alert("Max 10 images allowed");
+      return;
+    }
+    
+    setImages(prev => [...prev, ...files]);
+  };
+  
 
   const weddingDetails = {
     couple: {
@@ -196,9 +196,10 @@ export default function Dashboard() {
             {images.map((img, index) => (
               <img 
                 key={index} 
-                src={URL.createObjectURL(img)} 
+                src={img.preview} 
                 className="image-preview" 
                 alt={`Preview ${index + 1}`}
+                onLoad={() => URL.revokeObjectURL(img.preview)}
               />
             ))}
           </div>

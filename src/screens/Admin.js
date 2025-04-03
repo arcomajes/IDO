@@ -4,12 +4,11 @@ import { useState, useEffect } from "react"
 import axios from "axios"
 import { useNavigate } from "react-router-dom"
 import "./Admin.css"
-import mime from 'mime-types';
 
 export default function Admin() {
   const [memories, setMemories] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedImage, setSelectedImage] = useState(null); // For image modal
+  const [selectedImage, setSelectedImage] = useState(null);
   const navigate = useNavigate();
   const API_BASE_URL = "https://ido-cvwh.onrender.com";
 
@@ -25,24 +24,16 @@ export default function Admin() {
           },
           withCredentials: true
         });
-        console.log("API Response:", res.data); // Debugging log
         
-        if (Array.isArray(res.data)) {
-          // Ensure all image URLs are absolute
-          const formattedMemories = res.data.map(memory => ({
-            ...memory,
-            images: memory.images.map(img => {
-              if (img.startsWith('http')) return img;
-              return `${API_BASE_URL}${img}`;
-            })
-          }));
-          setMemories(formattedMemories);
-        } else {
-          console.error("Invalid response format:", res.data);
-          setMemories([]); // Fallback to empty array
-        }
+        const formattedMemories = res.data.map(memory => ({
+          ...memory,
+          images: memory.images.map(img => 
+            `data:${img.contentType};base64,${img.data}`
+          )
+        }));
+        
+        setMemories(formattedMemories);
       } catch (error) {
-        console.error("Error fetching memories:", error);
         navigate("/login");
       } finally {
         setLoading(false);
@@ -50,54 +41,49 @@ export default function Admin() {
     };
 
     fetchMemories();
-    // Refresh memories every 30 seconds
     const interval = setInterval(fetchMemories, 30000);
     return () => clearInterval(interval);
   }, [navigate]);
 
+  const handleDownload = (base64Data) => {
+    try {
+      const [header, data] = base64Data.split(',');
+      const contentType = header.split(':')[1].split(';')[0];
+      const filename = `memory-${Date.now()}.${contentType.split('/')[1]}`;
+      
+      const byteCharacters = atob(data);
+      const byteArrays = [];
+      
+      for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+        const slice = byteCharacters.slice(offset, offset + 512);
+        const byteNumbers = new Array(slice.length);
+        
+        for (let i = 0; i < slice.length; i++) {
+          byteNumbers[i] = slice.charCodeAt(i);
+        }
+        
+        byteArrays.push(new Uint8Array(byteNumbers));
+      }
+      
+      const blob = new Blob(byteArrays, { type: contentType });
+      const url = window.URL.createObjectURL(blob);
+      
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      alert('Error downloading image. Please try again.');
+    }
+  };
+  
   const handleLogout = () => {
     localStorage.removeItem("token")
     navigate("/login")
   }
-
-  const handleDownload = async (imageUrl) => {
-    try {
-      // Fetch with cache-busting
-      const response = await fetch(`${imageUrl}?t=${Date.now()}`);
-      
-      // Get metadata from headers
-      const contentType = response.headers.get('content-type');
-      const contentDisposition = response.headers.get('content-disposition');
-      
-      // Extract filename with priority:
-      // 1. Content-Disposition header
-      // 2. URL path
-      let filename = contentDisposition 
-        ? contentDisposition.split('filename=')[1].replace(/"/g, '')
-        : imageUrl.split('/').pop();
-  
-      // Add extension if missing
-      if (!filename.includes('.')) {
-        const ext = mime.extension(contentType) || 'bin';
-        filename = `${filename}.${ext}`;
-      }
-  
-      // Create download
-      const blob = await response.blob();
-      const tempLink = document.createElement('a');
-      tempLink.href = URL.createObjectURL(blob);
-      tempLink.download = filename;
-      tempLink.style.display = 'none';
-      document.body.appendChild(tempLink);
-      tempLink.click();
-      document.body.removeChild(tempLink);
-      URL.revokeObjectURL(tempLink.href);
-  
-    } catch (error) {
-      console.error('Download error:', error);
-      alert('Error downloading image. Please try again.');
-    }
-  };
   
   const handleImageClick = (image) => {
     setSelectedImage(image)
