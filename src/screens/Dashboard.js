@@ -1,6 +1,5 @@
 import { Card, CardContent } from "src/components/cards";
 import { MapPin, Heart, Calendar } from "lucide-react";
-import { Button } from "src/components/button";
 import 'src/styles.css';
 import React, { useState } from "react";
 import axios from "axios";
@@ -98,64 +97,12 @@ export default function Dashboard() {
       <div className="hero-content">
         <h1>Join Our Greatest Adventure</h1>
         <p>We invite you to celebrate our wedding day</p>
-        <div className="hero-buttons">
-          <Button className="btn btn-primary">RSVP</Button>
-          <Button className="btn btn-outline">View Details</Button>
-        </div>
+        
       </div>
     </div>
   </div>
 
-  <div className="grid-container">
-    {/* Wedding Date Card */}
-    <Card id="schedule" className="card">
-      <CardContent className="card-content">
-        <Calendar className="card-icon" />
-        <h3>Wedding Date</h3>
-        <p>{weddingDetails.date}</p>
-        <p>{weddingDetails.day}</p>
-      </CardContent>
-    </Card>
-
-    {/* Locations Card */}
-    <Card className="card">
-      <CardContent className="card-content">
-        <MapPin className="card-icon" />
-        <h3>Locations</h3>
-        <p>Ceremony & Reception</p>
-        <p className="text-sm">See details below</p>
-      </CardContent>
-    </Card>
-  </div>
-</section>
-
-{/* Locations Section */}
-<section id="locations" className="mb-16">
-  <div className="location-grid">
-    {/* Ceremony Card */}
-    <Card className="location-card">
-      <CardContent className="card-content">
-        <div className="location-card-header">
-          <div className="location-icon">
-            <Heart className="location-icon-svg" />
-          </div>
-          <div>
-            <h3 className="location-title">Ceremony</h3>
-            <p className="location-subtitle">{weddingDetails.ceremonyLocation}</p>
-          </div>
-        </div>
-        <p className="location-address">{weddingDetails.ceremonyAddress}</p>
-        <div className="map-placeholder">
-          <MapPin />
-          <span>Map placeholder</span>
-        </div>
-        <Button className="btn btn-location">Get Directions</Button>
-      </CardContent>
-    </Card>
-  </div>
-</section>
-
-          {/* Photos Section */}
+            {/* Photos Section */}
 <section id="photos" className="mb-16">
   <div className="section-header">
   <div className="divider"></div>
@@ -178,6 +125,15 @@ export default function Dashboard() {
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
+        </div>
+        <div className="form-group">
+          <label>Your Message/Wishes:</label>
+          <textarea 
+            className="form-control" 
+            rows="3"
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+          ></textarea>
         </div>
         <div className="form-group">
           <label>Upload Images (Max 10):</label>
@@ -204,20 +160,36 @@ export default function Dashboard() {
             ))}
           </div>
         </div>
-        <div className="form-group">
-          <label>Your Message/Wishes:</label>
-          <textarea 
-            className="form-control" 
-            rows="3"
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-          ></textarea>
-        </div>
+        
         <button type="submit" className="submit-btn">Upload Memory</button>
       </form>
     </div>
   </div>
 </section>
+
+  <div className="grid-container">
+    {/* Wedding Date Card */}
+    <Card id="schedule" className="card">
+      <CardContent className="card-content">
+        <Calendar className="card-icon" />
+        <h3>Wedding Date</h3>
+        <p>{weddingDetails.date}</p>
+        <p>{weddingDetails.day}</p>
+      </CardContent>
+    </Card>
+
+    {/* Locations Card */}
+    <Card className="card">
+      <CardContent className="card-content">
+        <MapPin className="card-icon" />
+        <h3>Locations</h3>
+        <p>Ceremony & Reception</p>
+        <p className="text-sm">See details below</p>
+      </CardContent>
+    </Card>
+  </div>
+</section>
+
           {/* Footer */}
           <footer className="footer">
             <div className="footer-hearts"></div>
